@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% block title %}{{ user_obj.name }} - User Details{% endblock %}
+{% block page_title %}<i class="fas fa-user"></i> User Details{% endblock %}
+
+{% block content %}
+<div class="cc-page-header">
+  <div style="display:flex; justify-content:space-between; align-items:flex-start; width:100%;">
+    <div>
+      <a href="{{ url_for('admin_users') }}" style="font-size:var(--text-sm); color:var(--cc-text-muted); text-decoration:none; margin-bottom:var(--space-2); display:inline-block;">&larr; Back to Users</a>
+      <h1 class="cc-page-title" style="margin:0;">{{ user_obj.name }}</h1>
+    </div>
+    <div style="display:flex; gap:var(--space-2);">
+      <form action="{{ url_for('admin_toggle_user_status', uid=user_obj.id) }}" method="POST" style="margin:0;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="cc-btn cc-btn--secondary">
+          {% if user_obj.status == 'active' %}
+            <i class="fas fa-ban"></i> Disable Account
+          {% else %}
+            <i class="fas fa-check"></i> Enable Account
+          {% endif %}
+        </button>
+      </form>
+      <form action="{{ url_for('admin_force_reset', uid=user_obj.id) }}" method="POST" style="margin:0;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="cc-btn cc-btn--secondary"><i class="fas fa-key"></i> Reset Password</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="cc-grid" style="grid-template-columns: 2fr 1fr; gap:var(--space-6); align-items:flex-start;">
+  
+  <!-- LEFT COLUMN -->
+  <div style="display:flex; flex-direction:column; gap:var(--space-6);">
+    <!-- Profile Card -->
+    <div class="cc-card" style="overflow: hidden; padding:0;">
+      <div style="height: 100px; background: linear-gradient(135deg, var(--cc-crimson) 0%, var(--cc-crimson-dark) 100%); position: relative;">
+        <div style="position: absolute; bottom: -32px; left: var(--space-8); width: 72px; height: 72px; background: var(--cc-surface); border-radius: var(--radius-full); border: 3px solid var(--cc-surface); display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow-sm);">
+          <div class="cc-user-avatar" style="width: 64px; height: 64px; background: {% if user_obj.role == 'organizer' %}#7C3AED{% else %}var(--cc-crimson){% endif %}; color:white; font-size:var(--text-xl); font-weight:var(--weight-semibold); display:flex; align-items:center; justify-content:center; border-radius:50%;">
+            {{ user_obj.name[0]|upper if user_obj.name else '?' }}
+          </div>
+        </div>
+      </div>
+      <div style="padding: calc(32px + var(--space-4)) var(--space-8) var(--space-8) var(--space-8);">
+        <div style="font-size: var(--text-xl); font-weight: var(--weight-semibold); color: var(--cc-text); margin-bottom:var(--space-1);">{{ user_obj.name }}</div>
+        <div style="font-size: var(--text-sm); color: var(--cc-text-muted); display:flex; flex-direction:column; gap:var(--space-1);">
+          <span><i class="fas fa-envelope" style="width:16px;"></i> {{ user_obj.email }}</span>
+          <span><i class="fas fa-id-card" style="width:16px;"></i> {{ user_obj.reg_number or 'N/A' }}</span>
+          <span><i class="fas fa-building" style="width:16px;"></i> {{ user_obj.department or 'N/A' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Event History -->
+    <div class="cc-card">
+      <div class="cc-card__header">
+        <h3 style="margin:0; font-size:var(--text-lg);">Event History</h3>
+      </div>
+      <div class="cc-table-wrapper" style="border:none; margin:0; padding:0;">
+        <table class="cc-table">
+          <thead>
+            <tr>
+              <th>Event</th>
+              <th>Date</th>
+              <th>Registration</th>
+              <th>Attendance</th>
+              <th>Certificate</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if registrations %}
+              {% for reg in registrations %}
+              <tr>
+                <td style="font-weight:var(--weight-medium);">{{ reg.event.title }}</td>
+                <td style="color:var(--cc-text-muted); font-size:var(--text-sm);">{{ reg.event.date.strftime('%d %b %Y') if reg.event.date else '—' }}</td>
+                <td>
+                  {% if reg.status == 'confirmed' %}
+                    <span class="cc-badge cc-badge--active">Confirmed</span>
+                  {% elif reg.status == 'waitlisted' %}
+                    <span class="cc-badge cc-badge--warning">Waitlisted</span>
+                  {% else %}
+                    <span class="cc-badge cc-badge--cancelled">{{ reg.status|title }}</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% set att = reg.event.attendances | selectattr("user_id", "equalto", user_obj.id) | first %}
+                  {% if att and att.status == 'present' %}
+                    <span class="cc-badge cc-badge--active">Present</span>
+                  {% elif att and att.status == 'absent' %}
+                    <span class="cc-badge cc-badge--cancelled">Absent</span>
+                  {% else %}
+                    <span style="color:var(--cc-text-muted); font-size:var(--text-sm);">—</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if att and att.status == 'present' %}
+                    <a href="{{ url_for('admin_edit_user', uid=user_obj.id) }}" class="cc-btn cc-btn--secondary" style="padding:0.2rem 0.5rem; font-size:0.75rem;"><i class="fas fa-download"></i> Download</a>
+                  {% else %}
+                    <span style="color:var(--cc-text-muted);">—</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="5">
+                  <div class="cc-empty-state" style="padding:var(--space-6);">
+                    <div class="cc-empty-state__icon"><i class="fas fa-calendar-times"></i></div>
+                    <div class="cc-empty-state__title">No event history</div>
+                  </div>
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT COLUMN -->
+  <div style="display:flex; flex-direction:column; gap:var(--space-6);">
+    <!-- Account Status -->
+    <div class="cc-card">
+      <div class="cc-card__body">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-4);">
+          <span style="font-weight:var(--weight-semibold);">Status</span>
+          {% if user_obj.status == 'active' %}
+            <span class="cc-badge cc-badge--active" style="font-size:0.85rem; padding:0.3rem 0.6rem;">Active</span>
+          {% else %}
+            <span class="cc-badge cc-badge--cancelled" style="font-size:0.85rem; padding:0.3rem 0.6rem;">Disabled</span>
+          {% endif %}
+        </div>
+        
+        <div style="display:flex; flex-direction:column; gap:var(--space-3);">
+          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--cc-border-subtle); padding-bottom:var(--space-2);">
+            <span style="color:var(--cc-text-muted); font-size:var(--text-sm);">Joined</span>
+            <span style="font-weight:var(--weight-medium); font-size:var(--text-sm);">{{ user_obj.created_at.strftime('%b %d, %Y') if user_obj.created_at else '—' }}</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--cc-border-subtle); padding-bottom:var(--space-2);">
+            <span style="color:var(--cc-text-muted); font-size:var(--text-sm);">Last Login</span>
+            <span style="font-weight:var(--weight-medium); font-size:var(--text-sm);">{{ user_obj.last_login.strftime('%b %d, %Y') if user_obj.last_login else 'Never' }}</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--cc-border-subtle); padding-bottom:var(--space-2);">
+            <span style="color:var(--cc-text-muted); font-size:var(--text-sm);">Role</span>
+            <span style="font-weight:var(--weight-medium); font-size:var(--text-sm);">{{ user_obj.role|title }}</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="color:var(--cc-text-muted); font-size:var(--text-sm);">Google OAuth</span>
+            <span style="font-weight:var(--weight-medium); font-size:var(--text-sm);">{% if user_obj.google_id %}Yes{% else %}No{% endif %}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Danger Zone -->
+    <div class="cc-card" style="border:1px solid var(--cc-error);">
+      <div class="cc-card__header" style="display:flex; align-items:center; gap:var(--space-2); border-bottom:1px solid var(--cc-error-bg);">
+        <i class="fas fa-exclamation-triangle" style="color:var(--cc-error);"></i>
+        <span style="color:var(--cc-error); font-weight:var(--weight-semibold); font-size:var(--text-lg);">Danger Zone</span>
+      </div>
+      <div class="cc-card__body" style="display:flex; flex-direction:column; gap:var(--space-3); padding:var(--space-4);">
+        <form action="{{ url_for('admin_toggle_user_status', uid=user_obj.id) }}" method="POST" style="margin:0;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="cc-btn cc-btn--danger" style="width:100%; justify-content:center;">
+            {% if user_obj.status == 'active' %}Disable Account{% else %}Enable Account{% endif %}
+          </button>
+        </form>
+        
+        <form action="{{ url_for('admin_force_reset', uid=user_obj.id) }}" method="POST" style="margin:0;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="cc-btn cc-btn--secondary" style="width:100%; justify-content:center;">Force Password Reset</button>
+        </form>
+        
+        <form action="{{ url_for('admin_delete_user', uid=user_obj.id) }}" method="POST" style="margin:0;" onsubmit="return confirm('Are you absolutely sure you want to permanently delete this user? This cannot be undone.');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="cc-btn cc-btn--danger" style="width:100%; justify-content:center;">Delete Account</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

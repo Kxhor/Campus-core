@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% block title %}Analytics{% endblock %}
+{% block page_title %}<i class="fas fa-chart-bar"></i> Analytics{% endblock %}
+
+{% block content %}
+<div class="cc-page-header">
+  <div style="display:flex; justify-content:space-between; align-items:flex-start; width:100%;">
+    <div>
+      <h1 class="cc-page-title font-display">Platform Analytics</h1>
+      <p class="cc-page-subtitle">Aggregated registration, attendance, and engagement metrics</p>
+    </div>
+  </div>
+</div>
+
+{% set total_events = event_analytics | length %}
+{% set total_regs = event_analytics | sum(attribute='total_registrations') %}
+{% set total_pres = event_analytics | sum(attribute='total_present') %}
+{% set avg_rate = ((event_analytics | sum(attribute='attendance_rate') / total_events) | round(1)) if total_events else 0 %}
+
+<!-- TOP STATS -->
+<div class="cc-grid cc-grid--4" style="margin-bottom: var(--space-6);">
+  <div class="cc-stat-card cc-stat-card--events">
+    <div class="cc-stat-card__icon"><i class="fas fa-calendar-alt"></i></div>
+    <div class="cc-stat-card__content">
+      <div class="cc-stat-card__label">Total Events</div>
+      <div class="cc-stat-card__value">{{ total_events }}</div>
+    </div>
+  </div>
+  
+  <div class="cc-stat-card cc-stat-card--users">
+    <div class="cc-stat-card__icon"><i class="fas fa-users"></i></div>
+    <div class="cc-stat-card__content">
+      <div class="cc-stat-card__label">Total Students</div>
+      <div class="cc-stat-card__value">{{ total_pres }}</div>
+    </div>
+  </div>
+  
+  <div class="cc-stat-card cc-stat-card--registered">
+    <div class="cc-stat-card__icon"><i class="fas fa-user-check"></i></div>
+    <div class="cc-stat-card__content">
+      <div class="cc-stat-card__label">Total Registrations</div>
+      <div class="cc-stat-card__value">{{ total_regs }}</div>
+    </div>
+  </div>
+  
+  <div class="cc-stat-card cc-stat-card--certs">
+    <div class="cc-stat-card__icon"><i class="fas fa-percent"></i></div>
+    <div class="cc-stat-card__content">
+      <div class="cc-stat-card__label">Overall Attendance Rate</div>
+      <div class="cc-stat-card__value">{{ avg_rate }}%</div>
+    </div>
+  </div>
+</div>
+
+{% if cat_labels %}
+<!-- CHART ROW 1 -->
+<div class="cc-grid cc-grid--2" style="margin-bottom: var(--space-6);">
+  <div class="cc-card">
+    <div class="cc-card__header">
+      <h3 style="margin:0; font-size:var(--text-lg);">Registrations by Category</h3>
+    </div>
+    <div class="cc-card__body">
+      <canvas id="catChart"></canvas>
+    </div>
+  </div>
+
+  <div class="cc-card">
+    <div class="cc-card__header">
+      <h3 style="margin:0; font-size:var(--text-lg);">Category Distribution</h3>
+    </div>
+    <div class="cc-card__body">
+      <canvas id="doughnutChart"></canvas>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- TOP EVENTS TABLE -->
+<div class="cc-card" style="width:100%;">
+  <div class="cc-card__header">
+    <h3 style="margin:0; font-size:var(--text-lg);">Top Events by Registrations</h3>
+  </div>
+  
+  <div class="cc-table-wrapper">
+    <table class="cc-table">
+      <thead>
+        <tr>
+          <th style="width: 40px;">#</th>
+          <th>Event Title</th>
+          <th>Category</th>
+          <th style="text-align:center;">Registrations</th>
+          <th>Attendance Rate</th>
+          <th style="text-align:right;">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in event_analytics %}
+        <tr>
+          <td style="color:var(--cc-text-muted);">{{ loop.index }}</td>
+          <td style="font-weight:var(--weight-medium);">{{ a.title }}</td>
+          <td><span class="cc-badge cc-badge--active">{{ a.category }}</span></td>
+          <td style="text-align:center; font-weight:var(--weight-semibold);">
+            {{ a.total_registrations }}
+          </td>
+          <td>{{ a.attendance_rate }}%</td>
+          <td style="text-align:right;">
+            <span class="cc-badge cc-badge--completed">Completed</span>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="6">
+            <div class="cc-empty-state">
+              <div class="cc-empty-state__icon"><i class="fas fa-chart-simple"></i></div>
+              <div class="cc-empty-state__title">No events found</div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+  'use strict';
+  {% if cat_labels %}
+  var catLabels = {{ cat_labels | tojson }};
+  var catCounts = {{ cat_counts | tojson }};
+
+  new Chart(document.getElementById('catChart'), {
+    type: 'bar',
+    data: {
+      labels: catLabels,
+      datasets: [{
+        label: 'Registrations',
+        data: catCounts,
+        backgroundColor: '#8B1538',
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true
+    },
+  });
+
+  new Chart(document.getElementById('doughnutChart'), {
+    type: 'doughnut',
+    data: {
+      labels: catLabels,
+      datasets: [{
+        data: catCounts,
+        backgroundColor: ['#8B1538', '#C9A84C', '#3b82f6', '#10b981', '#8b5cf6', '#06b6d4', '#ec4899'],
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true
+    },
+  });
+  {% endif %}
+})();
+</script>
+{% endblock %}

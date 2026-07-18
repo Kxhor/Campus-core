@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% block title %}Profile — CampusCore{% endblock %}
+{% block page_title %}<i class="fas fa-user"></i> My Profile{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+.profile-grid {
+  display: grid; 
+  grid-template-columns: 3fr 2fr; 
+  gap: var(--space-6); 
+  margin-top: var(--space-6); 
+  align-items: start;
+}
+@media (max-width: 768px) {
+  .profile-grid { grid-template-columns: 1fr; }
+}
+.cc-quick-link:hover {
+  background-color: var(--cc-bg-subtle);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cc-page-header">
+  <div>
+    <h1 class="cc-page-heading">My Profile</h1>
+    <p class="cc-page-sub">Manage your personal information</p>
+  </div>
+</div>
+
+{% if edit_mode %}
+<div class="cc-card" style="max-width: 640px;">
+  <form method="POST" style="padding:24px;">
+    <div class="form-section">
+      <h4 class="form-section-title"><i class="fas fa-user"></i> Basic Info</h4>
+      <div class="form-row">
+        <div class="form-group"><label>First Name *</label><input type="text" name="first_name" value="{{ user.first_name or user.name.split()[0] }}" required/></div>
+        <div class="form-group"><label>Last Name</label><input type="text" name="last_name" value="{{ user.last_name or '' }}"/></div>
+      </div>
+      <div class="form-group" style="margin-bottom:16px;"><label>Email *</label><input type="email" name="email" value="{{ user.email }}" required/></div>
+    </div>
+    <div class="form-section">
+      <h4 class="form-section-title"><i class="fas fa-address-card"></i> Contact &amp; Academics</h4>
+      <div class="form-group" style="margin-bottom:16px;"><label>College</label><input type="text" name="college" value="{{ user.college or '' }}" placeholder="Sathyabama Institute of Science and Technology"/></div>
+      <div class="form-row">
+        <div class="form-group"><label>Department</label><input type="text" name="department" value="{{ user.department or '' }}" placeholder="Computer Science Engineering"/></div>
+        <div class="form-group"><label>Reg. Number</label><input type="text" name="reg_number" value="{{ user.reg_number or '' }}"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Phone</label><input type="text" name="phone" value="{{ user.phone or '' }}" placeholder="+91 9876543210" maxlength="15"/></div>
+        <div class="form-group"><label>Year of Study</label>
+          <select name="year_of_study">
+            <option value="">Select Year</option>
+            <option value="1" {% if user.year_of_study == 1 %}selected{% endif %}>1st Year</option>
+            <option value="2" {% if user.year_of_study == 2 %}selected{% endif %}>2nd Year</option>
+            <option value="3" {% if user.year_of_study == 3 %}selected{% endif %}>3rd Year</option>
+            <option value="4" {% if user.year_of_study == 4 %}selected{% endif %}>4th Year</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="form-section">
+      <h4 class="form-section-title"><i class="fas fa-link"></i> Social Links</h4>
+      <div class="form-group" style="margin-bottom:16px;"><label>GitHub URL</label><input type="url" name="github_url" value="{{ user.github_url or '' }}" placeholder="https://github.com/username"/></div>
+      <div class="form-group" style="margin-bottom:16px;"><label>LinkedIn URL</label><input type="url" name="linkedin_url" value="{{ user.linkedin_url or '' }}" placeholder="https://linkedin.com/in/username"/></div>
+    </div>
+    <div class="form-actions"><a href="{{ url_for('student_profile') }}" class="cc-btn cc-btn--ghost">Cancel</a><button type="submit" class="cc-btn cc-btn--primary"><i class="fas fa-save"></i> Save Changes</button></div>
+  </form>
+</div>
+{% else %}
+
+<!-- PROFILE HERO CARD -->
+<div class="cc-card" style="overflow: hidden;">
+  <div style="height: 100px; background: linear-gradient(135deg, var(--cc-crimson) 0%, var(--cc-crimson-dark) 100%); position: relative;">
+    <div style="position: absolute; bottom: -32px; left: var(--space-8); width: 72px; height: 72px; background: var(--cc-surface); border-radius: var(--radius-full); border: 3px solid var(--cc-surface);">
+      <div style="width: 100%; height: 100%; border-radius: var(--radius-full); background: var(--cc-crimson); color: white; display: flex; align-items: center; justify-content: center; font-size: var(--text-xl); font-weight: 700;">
+        {{ user.name[0] | upper }}
+      </div>
+    </div>
+  </div>
+  
+  <div style="padding: var(--space-8); padding-top: calc(32px + var(--space-4));">
+    <div style="font-size: var(--text-xl); font-weight: var(--weight-semibold); color: var(--cc-text);">{{ user.name }}</div>
+    <div class="cc-role-badge" style="margin-top: var(--space-2); display: inline-block; font-size: var(--text-xs); font-weight: 600; padding: 2px 8px; border-radius: 12px; background: var(--cc-bg-subtle); color: var(--cc-text-secondary);">
+      Student
+    </div>
+    
+    {% if user.department is defined or user.year_of_study is defined %}
+      <div style="font-size: var(--text-sm); color: var(--cc-text-muted); margin-top: var(--space-2);">
+        {{ user.department or 'Department not set' }} &middot; Year {{ user.year_of_study or 'N/A' }}
+      </div>
+    {% endif %}
+    {% if user.reg_number is defined %}
+      <div style="font-size: var(--text-xs); color: var(--cc-text-muted); margin-top: var(--space-1);">
+        {{ user.reg_number }}
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- TWO-COLUMN LAYOUT -->
+<div class="profile-grid">
+  
+  <!-- LEFT: Personal Information -->
+  <div class="cc-card">
+    <div class="cc-card__header" style="display: flex; justify-content: space-between; align-items: center;">
+      <h3 style="margin: 0; font-size: var(--text-base); font-weight: var(--weight-semibold);">Personal Information</h3>
+      <a href="?edit=1" class="cc-btn cc-btn--ghost cc-btn--sm">Edit Profile</a>
+    </div>
+    <div class="cc-card__body">
+      <div style="display: flex; flex-direction: column;">
+        <div style="display: flex; padding: var(--space-3) 0; border-bottom: 1px solid var(--cc-border-subtle);">
+          <div style="width: 40%; font-size: var(--text-sm); color: var(--cc-text-muted); font-weight: 500;">Full Name</div>
+          <div style="width: 60%; font-size: var(--text-sm); color: var(--cc-text);">{{ user.name }}</div>
+        </div>
+        <div style="display: flex; padding: var(--space-3) 0; border-bottom: 1px solid var(--cc-border-subtle);">
+          <div style="width: 40%; font-size: var(--text-sm); color: var(--cc-text-muted); font-weight: 500;">Email Address</div>
+          <div style="width: 60%; font-size: var(--text-sm); color: var(--cc-text);">{{ user.email }}</div>
+        </div>
+        {% if user.reg_number is defined %}
+        <div style="display: flex; padding: var(--space-3) 0; border-bottom: 1px solid var(--cc-border-subtle);">
+          <div style="width: 40%; font-size: var(--text-sm); color: var(--cc-text-muted); font-weight: 500;">Register Number</div>
+          <div style="width: 60%; font-size: var(--text-sm); color: var(--cc-text);">{{ user.reg_number or '—' }}</div>
+        </div>
+        {% endif %}
+        {% if user.department is defined %}
+        <div style="display: flex; padding: var(--space-3) 0; border-bottom: 1px solid var(--cc-border-subtle);">
+          <div style="width: 40%; font-size: var(--text-sm); color: var(--cc-text-muted); font-weight: 500;">Department</div>
+          <div style="width: 60%; font-size: var(--text-sm); color: var(--cc-text);">{{ user.department or '—' }}</div>
+        </div>
+        {% endif %}
+        {% if user.year_of_study is defined %}
+        <div style="display: flex; padding: var(--space-3) 0; border-bottom: 1px solid var(--cc-border-subtle);">
+          <div style="width: 40%; font-size: var(--text-sm); color: var(--cc-text-muted); font-weight: 500;">Year of Study</div>
+          <div style="width: 60%; font-size: var(--text-sm); color: var(--cc-text);">{{ user.year_of_study or '—' }}</div>
+        </div>
+        {% endif %}
+        {% if user.college is defined %}
+        <div style="display: flex; padding: var(--space-3) 0; border-bottom: 1px solid var(--cc-border-subtle);">
+          <div style="width: 40%; font-size: var(--text-sm); color: var(--cc-text-muted); font-weight: 500;">College</div>
+          <div style="width: 60%; font-size: var(--text-sm); color: var(--cc-text);">{{ user.college or '—' }}</div>
+        </div>
+        {% endif %}
+        {% if user.phone is defined %}
+        <div style="display: flex; padding: var(--space-3) 0; border-bottom: 1px solid var(--cc-border-subtle);">
+          <div style="width: 40%; font-size: var(--text-sm); color: var(--cc-text-muted); font-weight: 500;">Phone</div>
+          <div style="width: 60%; font-size: var(--text-sm); color: var(--cc-text);">{{ user.phone or '—' }}</div>
+        </div>
+        {% endif %}
+        {% if user.github_url is defined %}
+        <div style="display: flex; padding: var(--space-3) 0; border-bottom: 1px solid var(--cc-border-subtle);">
+          <div style="width: 40%; font-size: var(--text-sm); color: var(--cc-text-muted); font-weight: 500;">GitHub</div>
+          <div style="width: 60%; font-size: var(--text-sm); color: var(--cc-text);">{% if user.github_url %}<a href="{{ user.github_url }}" target="_blank" style="color: var(--cc-primary);">Profile</a>{% else %}—{% endif %}</div>
+        </div>
+        {% endif %}
+        {% if user.linkedin_url is defined %}
+        <div style="display: flex; padding: var(--space-3) 0;">
+          <div style="width: 40%; font-size: var(--text-sm); color: var(--cc-text-muted); font-weight: 500;">LinkedIn</div>
+          <div style="width: 60%; font-size: var(--text-sm); color: var(--cc-text);">{% if user.linkedin_url %}<a href="{{ user.linkedin_url }}" target="_blank" style="color: var(--cc-primary);">Profile</a>{% else %}—{% endif %}</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  
+  <!-- RIGHT: Activity & Quick Actions -->
+  <div>
+    <div class="cc-card">
+      <div class="cc-card__header">
+        <h3 style="margin: 0; font-size: var(--text-base); font-weight: var(--weight-semibold);">Activity</h3>
+      </div>
+      <div class="cc-card__body">
+        <div style="display: flex; align-items: center; gap: var(--space-4); padding-bottom: var(--space-4); border-bottom: 1px solid var(--cc-border-subtle);">
+          <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(16, 185, 129, 0.1); color: var(--cc-success); display: flex; align-items: center; justify-content: center;">
+            <i class="fas fa-user-check"></i>
+          </div>
+          <div style="flex-grow: 1; font-size: var(--text-sm); font-weight: 500; color: var(--cc-text);">Events Attended</div>
+          <div style="font-size: var(--text-xl); font-weight: var(--weight-bold); color: var(--cc-text);">{{ present_count | default('0') }}</div>
+        </div>
+        
+        <div style="display: flex; align-items: center; gap: var(--space-4); padding: var(--space-4) 0; border-bottom: 1px solid var(--cc-border-subtle);">
+          <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(59, 130, 246, 0.1); color: var(--cc-info); display: flex; align-items: center; justify-content: center;">
+            <i class="fas fa-ticket-alt"></i>
+          </div>
+          <div style="flex-grow: 1; font-size: var(--text-sm); font-weight: 500; color: var(--cc-text);">Events Registered</div>
+          <div style="font-size: var(--text-xl); font-weight: var(--weight-bold); color: var(--cc-text);">{{ total_events | default('0') }}</div>
+        </div>
+        
+        <div style="display: flex; align-items: center; gap: var(--space-4); padding-top: var(--space-4);">
+          <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(245, 158, 11, 0.1); color: var(--cc-gold); display: flex; align-items: center; justify-content: center;">
+            <i class="fas fa-certificate"></i>
+          </div>
+          <div style="flex-grow: 1; font-size: var(--text-sm); font-weight: 500; color: var(--cc-text);">Certificates</div>
+          <div style="font-size: var(--text-xl); font-weight: var(--weight-bold); color: var(--cc-text);">{{ present_count | default('0') }}</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="cc-card" style="margin-top: var(--space-5);">
+      <div class="cc-card__header">
+        <h3 style="margin: 0; font-size: var(--text-base); font-weight: var(--weight-semibold);">Quick Actions</h3>
+      </div>
+      <div class="cc-card__body" style="padding: 0;">
+        <div style="display: flex; flex-direction: column;">
+          <a href="{{ url_for('student_events') }}" class="cc-quick-link" style="display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4) var(--space-5); color: var(--cc-text); text-decoration: none; border-bottom: 1px solid var(--cc-border-subtle);">
+            <i class="fas fa-search" style="color: var(--cc-text-muted);"></i> Browse Events
+            <i class="fas fa-chevron-right" style="margin-left: auto; font-size: 10px; color: var(--cc-border);"></i>
+          </a>
+          <a href="{{ url_for('my_events') }}" class="cc-quick-link" style="display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4) var(--space-5); color: var(--cc-text); text-decoration: none; border-bottom: 1px solid var(--cc-border-subtle);">
+            <i class="fas fa-ticket-alt" style="color: var(--cc-text-muted);"></i> My Events
+            <i class="fas fa-chevron-right" style="margin-left: auto; font-size: 10px; color: var(--cc-border);"></i>
+          </a>
+          <a href="?edit=1" class="cc-quick-link" style="display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4) var(--space-5); color: var(--cc-text); text-decoration: none;">
+            <i class="fas fa-cog" style="color: var(--cc-text-muted);"></i> Settings
+            <i class="fas fa-chevron-right" style="margin-left: auto; font-size: 10px; color: var(--cc-border);"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

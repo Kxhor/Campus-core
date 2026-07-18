@@ -1,0 +1,300 @@
+{% extends "base.html" %}
+
+{% block title %}Event Management — CampusCore{% endblock %}
+{% block page_title %}Events{% endblock %}
+
+{% block head %}
+<script>
+function confirmReject(form) {
+  var r = prompt('Rejection reason:');
+  if (r) {
+    var i = document.createElement('input');
+    i.type = 'hidden';
+    i.name = 'reason';
+    i.value = r;
+    form.appendChild(i);
+    return true;
+  }
+  return false;
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<!-- Page header -->
+<div class="cc-page-header" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:var(--space-4);">
+  <div>
+    <h1 class="cc-page-title">Event Management</h1>
+    <p class="cc-page-subtitle">Review, approve, and manage all campus events</p>
+  </div>
+  <a href="{% if session.get('role') == 'admin' %}{{ url_for('create_event') }}{% else %}{{ url_for('organizer_create_event') }}{% endif %}" class="cc-btn cc-btn--primary">
+    <i class="fas fa-plus"></i> Create Event
+  </a>
+</div>
+
+<!-- Tab group -->
+<div style="margin-bottom:var(--space-5);">
+  <div class="cc-tab-group">
+    <a href="{{ url_for('admin_events', tab='all', search=search, category=selected_category) }}" 
+       class="cc-tab {% if tab == 'all' or not tab %}active{% endif %}">
+      All Events
+    </a>
+    <a href="{{ url_for('admin_events', tab='pending', search=search, category=selected_category) }}" 
+       class="cc-tab {% if tab == 'pending' %}active{% endif %}">
+      Pending Review
+    </a>
+    <a href="{{ url_for('admin_events', tab='upcoming', search=search, category=selected_category) }}" 
+       class="cc-tab {% if tab == 'upcoming' %}active{% endif %}">
+      Upcoming
+    </a>
+    <a href="{{ url_for('admin_events', tab='past', search=search, category=selected_category) }}" 
+       class="cc-tab {% if tab == 'past' %}active{% endif %}">
+      Past
+    </a>
+  </div>
+</div>
+
+<!-- Search/filter bar -->
+<div class="cc-card" style="margin-bottom:var(--space-5);">
+  <div class="cc-card__body" style="padding:var(--space-4) var(--space-5);">
+    <form method="GET" action="{{ url_for('admin_events') }}" id="filterForm"
+          style="display:flex; gap:var(--space-3); align-items:center; flex-wrap:wrap;">
+      <input type="hidden" name="tab" value="{{ tab or 'all' }}">
+      
+      <div class="cc-search-wrapper" style="flex:1; min-width:200px;">
+        <i class="fas fa-search cc-search-icon"></i>
+        <input type="text" name="search" class="cc-input" 
+               placeholder="Search events..." 
+               value="{{ search }}">
+      </div>
+
+      <select name="category" class="cc-input cc-select" style="width:180px;" onchange="this.form.submit()">
+        <option value="">All Categories</option>
+        {% for cat in categories %}
+        <option value="{{ cat }}" {% if selected_category == cat %}selected{% endif %}>
+          {{ cat }}
+        </option>
+        {% endfor %}
+      </select>
+
+      <select name="venue_id" class="cc-input cc-select" style="width:180px;" onchange="this.form.submit()">
+        <option value="">All Venues</option>
+        {% for v in venues %}
+        <option value="{{ v.id }}" {% if selected_venue_id == v.id|string %}selected{% endif %}>
+          {{ v.name }}
+        </option>
+        {% endfor %}
+      </select>
+
+      <button type="submit" class="cc-btn cc-btn--secondary">
+        <i class="fas fa-filter"></i> Filter
+      </button>
+      
+      {% if search or selected_category or selected_venue_id or selected_tags %}
+      <a href="{{ url_for('admin_events', tab=tab) }}" class="cc-btn cc-btn--ghost">
+        <i class="fas fa-times"></i> Clear
+      </a>
+      {% endif %}
+    </form>
+
+    <!-- Tag pills -->
+    {% if all_tags %}
+      <div style="margin-top:var(--space-4); display:flex; flex-wrap:wrap; gap:var(--space-2); padding-top:var(--space-3); border-top:1px solid var(--cc-border-subtle);">
+        {% for t in all_tags %}
+          <span class="cc-tag tag-chip {% if t in (selected_tags or '').split(',') %}active{% endif %}" data-tag="{{ t }}">
+            {{ t }}
+          </span>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Events table -->
+{% if events %}
+<div class="cc-table-wrapper">
+  <table class="cc-table">
+    <thead>
+      <tr>
+        <th>Event</th>
+        <th>Date</th>
+        <th>Venue</th>
+        <th>Registrations</th>
+        <th>Status</th>
+        <th>Approval</th>
+        <th style="text-align:right;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for event in events %}
+      <tr>
+        <!-- Event title + category -->
+        <td>
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <span style="font-weight:var(--weight-semibold); color:var(--cc-text);">
+              {{ event.title }}
+            </span>
+            <span class="cc-badge cc-badge--{{ event.category.lower() | replace(' ','-') if event.category else 'general' }}" 
+                  style="width:fit-content;">
+              {{ event.category or 'General' }}
+            </span>
+          </div>
+        </td>
+
+        <!-- Date -->
+        <td>
+          <div style="display:flex; align-items:center; gap:var(--space-2);">
+            <i class="fas fa-calendar" style="color:var(--cc-crimson); opacity:0.6;"></i>
+            <span style="font-size:var(--text-sm);">
+              {{ event.date.strftime('%d %b %Y') if event.date else 'TBD' }}
+            </span>
+          </div>
+          {% if event.time %}
+          <div style="font-size:var(--text-xs); color:var(--cc-text-muted); margin-top:2px;">
+            <i class="fas fa-clock" style="opacity:0.5;"></i> {{ event.time }}
+          </div>
+          {% endif %}
+        </td>
+
+        <!-- Venue -->
+        <td>
+          <span style="font-size:var(--text-sm); color:var(--cc-text-secondary);">
+            {{ event.venue or '—' }}
+          </span>
+        </td>
+
+        <!-- Registrations -->
+        <td>
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <span style="font-size:var(--text-sm); font-weight:var(--weight-semibold);">
+              {{ reg_counts.get(event.id, 0) }}/{{ event.max_participants }}
+            </span>
+            <div class="cc-capacity-bar" style="width:80px;">
+              {% set pct = ((reg_counts.get(event.id, 0) / (event.max_participants or 1)) * 100)|int %}
+              <div class="cc-capacity-bar__fill {% if pct >= 90 %}cc-capacity-bar__fill--full{% elif pct >= 70 %}cc-capacity-bar__fill--warning{% endif %}"
+                   style="width:{{ [pct, 100]|min }}%"></div>
+            </div>
+          </div>
+        </td>
+
+        <!-- Event status -->
+        <td>
+          {% set ev_status = event.status or 'upcoming' %}
+          {% if event.date < today %}
+            {% set ev_status = 'completed' %}
+          {% elif event.date == today %}
+            {% set ev_status = 'active' %}
+          {% endif %}
+          <span class="cc-badge cc-badge--{{ ev_status }}">
+            {{ ev_status | title }}
+          </span>
+        </td>
+
+        <!-- Approval status -->
+        <td>
+          <span class="cc-badge cc-badge--{{ event.approval_status or 'pending' }}">
+            {{ event.approval_status | title if event.approval_status else 'Pending' }}
+            {% if event.revision_count and event.revision_count > 0 %}
+              <small style="opacity:0.7; margin-left:4px;">(Rev {{ event.revision_count }})</small>
+            {% endif %}
+          </span>
+        </td>
+
+        <!-- Actions -->
+        <td>
+          <div style="display:flex; align-items:center; justify-content:flex-end; gap:var(--space-2);">
+            
+            {% if session.get('role') == 'admin' %}
+              {% if event.approval_status == 'pending' %}
+              <form method="POST" action="{{ url_for('admin_review_event', event_id=event.id) }}" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="decision" value="approved">
+                <button type="submit" class="cc-btn cc-btn--success cc-btn--sm" title="Approve" aria-label="Approve event">
+                  <i class="fas fa-check"></i>
+                </button>
+              </form>
+              <form method="POST" action="{{ url_for('admin_review_event', event_id=event.id) }}" style="display:inline;" onsubmit="return confirmReject(this);">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="decision" value="rejected">
+                <button type="submit" class="cc-btn cc-btn--danger cc-btn--sm" title="Reject" aria-label="Reject event">
+                  <i class="fas fa-times"></i>
+                </button>
+              </form>
+              {% endif %}
+              
+              <a href="{{ url_for('manage_attendance', event_id=event.id) }}" class="cc-btn cc-btn--secondary cc-btn--sm" title="View details">
+                <i class="fas fa-eye"></i>
+              </a>
+              <a href="{{ url_for('edit_event', event_id=event.id) }}" class="cc-btn cc-btn--secondary cc-btn--sm" title="Edit">
+                <i class="fas fa-pencil"></i>
+              </a>
+              <form method="POST" action="{{ url_for('delete_event', event_id=event.id) }}" style="display:inline;" onsubmit="return confirm('Delete this event?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="cc-btn cc-btn--ghost cc-btn--sm" style="color:var(--cc-error);" title="Delete">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </form>
+            {% else %}
+              <a href="{{ url_for('organizer_manage_attendance', event_id=event.id) }}" class="cc-btn cc-btn--secondary cc-btn--sm" title="View details">
+                <i class="fas fa-eye"></i>
+              </a>
+              <a href="{{ url_for('organizer_edit_event', event_id=event.id) }}" class="cc-btn cc-btn--secondary cc-btn--sm" title="Edit">
+                <i class="fas fa-pencil"></i>
+              </a>
+              <form method="POST" action="{{ url_for('organizer_delete_event', event_id=event.id) }}" style="display:inline;" onsubmit="return confirm('Delete this event?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="cc-btn cc-btn--ghost cc-btn--sm" style="color:var(--cc-error);" title="Delete">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </form>
+            {% endif %}
+
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% else %}
+<div class="cc-empty-state" style="padding:var(--space-12) var(--space-6);">
+  <div class="cc-empty-state__icon"><i class="fas fa-calendar-times"></i></div>
+  <div class="cc-empty-state__title">No events found</div>
+  <div class="cc-empty-state__desc">
+    {% if search or selected_category %}
+    Try adjusting your search or filters.
+    {% else %}
+    No events have been created yet.
+    {% endif %}
+  </div>
+  <a href="{% if session.get('role') == 'admin' %}{{ url_for('create_event') }}{% else %}{{ url_for('organizer_create_event') }}{% endif %}" class="cc-btn cc-btn--primary">Create an event</a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+/* ── Tag chips ────────────────────────────────────────────────── */
+(function() {
+  var chips = document.querySelectorAll('.tag-chip');
+  chips.forEach(function(chip) {
+    chip.addEventListener('click', function() {
+      this.classList.toggle('active');
+      var active = document.querySelectorAll('.tag-chip.active');
+      var tags = Array.from(active).map(function(c) { return c.dataset.tag; });
+      var input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'tags';
+      input.value = tags.join(',');
+      var form = document.getElementById('filterForm');
+      var existing = form.querySelector('input[name="tags"]');
+      if (existing) existing.remove();
+      form.appendChild(input);
+      form.submit();
+    });
+  });
+})();
+</script>
+{% endblock %}

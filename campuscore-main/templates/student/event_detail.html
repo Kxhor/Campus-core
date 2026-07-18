@@ -1,0 +1,389 @@
+{% extends "base.html" %}
+
+{% block title %}{{ event.title }}{% endblock %}
+{% block page_title %}<i class="fas fa-calendar-alt"></i> {{ event.title[:40] ~ '...' if event.title|length > 40 else event.title }}{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+.event-hero {
+  padding: 0;
+  overflow: hidden;
+  margin-bottom: var(--space-6);
+}
+
+.event-hero__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 768px) {
+  .event-hero__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.event-hero__image-wrapper {
+  height: 320px;
+}
+
+.event-hero__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.event-hero__placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--cc-crimson-muted) 0%, var(--cc-sidebar-bg) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.event-hero__placeholder i {
+  font-size: 48px;
+  color: var(--cc-crimson);
+  opacity: 0.5;
+}
+
+.event-hero__content {
+  padding: var(--space-8);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.event-hero__badges {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.event-hero__title {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--cc-text);
+  margin-bottom: var(--space-6);
+  line-height: 1.2;
+}
+
+.event-hero__meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.event-hero__meta-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--cc-text-secondary);
+}
+
+.event-hero__meta-item i {
+  width: 16px;
+  text-align: center;
+  color: var(--cc-text-muted);
+}
+
+.event-content-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--space-6);
+  margin-top: var(--space-6);
+}
+
+@media (max-width: 768px) {
+  .event-content-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.event-description {
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  color: var(--cc-text);
+  white-space: pre-wrap;
+}
+
+.registration-divider {
+  border-top: 1px solid var(--cc-border-subtle);
+  margin: var(--space-4) 0;
+}
+
+/* Feedback Form Styles */
+.star-btn {
+  background: none;
+  border: none;
+  font-size: 1.6rem;
+  cursor: pointer;
+  color: var(--cc-border);
+  transition: color 0.15s;
+  padding: 0 2px;
+}
+.star-btn:hover,
+.star-btn.active { color: #f59e0b !important; } 
+
+.feedback-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--cc-border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  resize: vertical;
+  min-height: 80px;
+  margin-bottom: var(--space-3);
+  background: var(--cc-bg);
+  color: var(--cc-text);
+  font-family: inherit;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom: var(--space-6); display: flex; justify-content: flex-end;">
+  <a href="{{ url_for('student_events') }}" class="cc-btn cc-btn--ghost cc-btn--sm"><i class="fas fa-arrow-left"></i> Back</a>
+</div>
+
+<div class="cc-card event-hero">
+  <div class="event-hero__grid">
+    <div class="event-hero__image-wrapper">
+      {% if event.image_url %}
+        <img src="{{ event.image_url }}" alt="{{ event.title }}" class="event-hero__image">
+      {% else %}
+        <div class="event-hero__placeholder">
+          <i class="fas fa-calendar-alt"></i>
+        </div>
+      {% endif %}
+    </div>
+    
+    <div class="event-hero__content">
+      <div class="event-hero__badges">
+        <span class="cc-badge cc-badge--{{ event.category.lower() | replace(' ', '-') if event.category else 'general' }}">
+          {{ event.category }}
+        </span>
+        
+        {% if event.status == 'completed' %}
+          <span class="cc-badge cc-badge--completed">Completed</span>
+        {% elif event.date == today %}
+          <span class="cc-badge cc-badge--active">Live</span>
+        {% endif %}
+      </div>
+      
+      <h1 class="event-hero__title">{{ event.title }}</h1>
+      
+      <div class="event-hero__meta">
+        <div class="event-hero__meta-item">
+          <i class="fas fa-calendar"></i>
+          <span>{{ event.date.strftime('%d %B %Y') }}</span>
+        </div>
+        {% if event.time %}
+        <div class="event-hero__meta-item">
+          <i class="fas fa-clock"></i>
+          <span>{{ event.time }}</span>
+        </div>
+        {% endif %}
+        {% if event.venue %}
+        <div class="event-hero__meta-item">
+          <i class="fas fa-map-marker-alt"></i>
+          <span>{{ event.venue }}</span>
+        </div>
+        {% endif %}
+        {% if organizer %}
+        <div class="event-hero__meta-item">
+          <i class="fas fa-user"></i>
+          <span>{{ organizer.name }}</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="event-content-grid">
+  <!-- LEFT COLUMN -->
+  <div style="display: flex; flex-direction: column; gap: var(--space-6);">
+    <!-- About Card -->
+    <div class="cc-card">
+      <div class="cc-card__header">
+        <h3>About this Event</h3>
+      </div>
+      <div class="cc-card__body event-description">{{ event.description }}</div>
+    </div>
+
+    <!-- Tags Card -->
+    {% if tags %}
+    <div class="cc-card">
+      <div class="cc-card__header">
+        <h3>Tags</h3>
+      </div>
+      <div class="cc-card__body" style="display: flex; flex-wrap: wrap; gap: var(--space-2);">
+        {% for tag in tags %}
+          <span class="cc-tag">{{ tag }}</span>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+    
+    <!-- Brochure Card (If has pdf) -->
+    {% if event.pdf_file %}
+    <div class="cc-card">
+      <div class="cc-card__body">
+        <a href="{{ url_for('static', filename='uploads/' + event.pdf_file) }}" target="_blank" class="cc-btn cc-btn--primary cc-btn--sm">
+          <i class="fas fa-file-pdf"></i> Download Event Brochure
+        </a>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Feedback Section -->
+    {% if is_registered %}
+    <div class="cc-card" id="feedbackSection">
+      <div class="cc-card__header">
+        <h3>Rate This Event</h3>
+      </div>
+      <div class="cc-card__body">
+        {% if event.date <= today %}
+          {% if feedback %}
+          <div class="cc-alert cc-alert--success">
+            <i class="fas fa-check-circle"></i>
+            <div>
+              You rated this {{ feedback.rating }}/5. 
+              {% if feedback.comment %}<br/>"{{ feedback.comment }}"{% endif %}
+            </div>
+          </div>
+          {% elif not has_attended %}
+          <p style="color:var(--cc-text-muted); font-size: var(--text-sm);">Attendance must be marked before you can submit feedback.</p>
+          {% else %}
+          <div id="feedbackForm">
+            <p style="margin-bottom:var(--space-3); font-size:var(--text-sm); color:var(--cc-text-muted);">How was your experience?</p>
+            <div style="display:flex; gap:4px; margin-bottom:var(--space-3);" id="starRating">
+              {% for i in range(1, 6) %}
+              <button type="button" class="star-btn" data-value="{{ i }}">&#9733;</button>
+              {% endfor %}
+            </div>
+            <textarea id="feedbackComment" class="feedback-textarea" placeholder="Any comments? (optional)"></textarea>
+            <div style="display: flex; align-items: center; gap: var(--space-3);">
+              <button class="cc-btn cc-btn--primary cc-btn--sm" onclick="submitFeedback({{ event.id }})">Submit Feedback</button>
+              <span id="feedbackMsg" style="font-size:var(--text-sm); color:var(--cc-text-muted);"></span>
+            </div>
+          </div>
+          {% endif %}
+        {% else %}
+        <p style="color:var(--cc-text-muted); font-size: var(--text-sm);">Feedback will be available after the event ends.</p>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- RIGHT COLUMN -->
+  <div>
+    <div class="cc-card cc-card--elevated">
+      <div class="cc-card__header">
+        <h3>Registration</h3>
+      </div>
+      <div class="cc-card__body">
+        {% set max_p = event.max_participants if event.max_participants > 0 else 1 %}
+        {% set fill_pct = (reg_count / max_p * 100) %}
+        {% set seats_remaining = event.max_participants - reg_count %}
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2);">
+          <span style="font-size: var(--text-sm); color: var(--cc-text-muted);">
+            {{ reg_count }} / {{ event.max_participants }} seats filled
+          </span>
+          <span style="font-size: var(--text-sm); font-weight: 600; color: {{ 'var(--cc-error)' if seats_remaining <= 0 else 'var(--cc-text)' }};">
+            {% if seats_remaining <= 0 %}Full{% else %}{{ seats_remaining }} available{% endif %}
+          </span>
+        </div>
+        
+        <div class="cc-capacity-bar">
+          <div class="cc-capacity-bar__fill {% if fill_pct >= 90 %}cc-capacity-bar__fill--full{% elif fill_pct >= 70 %}cc-capacity-bar__fill--warning{% endif %}" style="width: {{ fill_pct }}%"></div>
+        </div>
+        
+        <div class="registration-divider"></div>
+        
+        <!-- Action States -->
+        {% if event.id in registered_ids %}
+          <div class="cc-badge cc-badge--registered" style="width:100%; justify-content:center; padding:var(--space-3); margin-bottom: var(--space-3);">
+            You are registered for this event
+          </div>
+          
+          <div style="display: flex; flex-direction: column; gap: var(--space-2);">
+            <a href="{{ url_for('export_event_ics', event_id=event.id) }}" class="cc-btn cc-btn--outline cc-btn--sm" style="width:100%; justify-content: center;">
+              <i class="fas fa-calendar-plus"></i> Add to Calendar
+            </a>
+            
+            <form method="POST" action="{{ url_for('deregister_event', event_id=event.id) }}">
+              <button type="submit" class="cc-btn cc-btn--ghost cc-btn--sm" style="width:100%; justify-content: center;" onclick="return confirm('Cancel your registration for {{ event.title }}?')">
+                Cancel Registration
+              </button>
+            </form>
+          </div>
+        {% elif reg_count >= event.max_participants %}
+          <div style="width:100%; text-align:center; padding:var(--space-3); font-size:var(--text-sm); color:var(--cc-error); font-weight:600;">
+            This event is currently full
+          </div>
+        {% else %}
+          <form method="POST" action="{{ url_for('register_event', event_id=event.id) }}">
+            <button type="submit" class="cc-btn cc-btn--primary" style="width: 100%; justify-content: center;">Register Now</button>
+          </form>
+        {% endif %}
+        
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+let selectedRating = 0;
+document.querySelectorAll('.star-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    selectedRating = parseInt(this.dataset.value);
+    document.querySelectorAll('.star-btn').forEach(function(s, i) {
+      s.classList.toggle('active', i < selectedRating);
+      s.style.color = i < selectedRating ? '#f59e0b' : 'var(--cc-border)';
+    });
+  });
+  btn.addEventListener('mouseenter', function() {
+    var val = parseInt(this.dataset.value);
+    document.querySelectorAll('.star-btn').forEach(function(s, i) {
+      s.style.color = i < val ? '#f59e0b' : 'var(--cc-border)';
+    });
+  });
+  btn.addEventListener('mouseleave', function() {
+    document.querySelectorAll('.star-btn').forEach(function(s, i) {
+      s.style.color = i < selectedRating ? '#f59e0b' : 'var(--cc-border)';
+    });
+  });
+});
+
+function submitFeedback(eventId) {
+  if (!selectedRating) { document.getElementById('feedbackMsg').textContent = 'Please select a rating.'; return; }
+  var comment = document.getElementById('feedbackComment').value;
+  document.getElementById('feedbackMsg').textContent = 'Submitting...';
+  
+  fetch('/api/events/' + eventId + '/feedback', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({rating: selectedRating, comment: comment})
+  }).then(function(r) {
+    if (r.status === 409) { document.getElementById('feedbackMsg').textContent = 'Already submitted.'; return; }
+    if (r.status === 403) { document.getElementById('feedbackMsg').textContent = 'Attendance required.'; return; }
+    if (!r.ok) { document.getElementById('feedbackMsg').textContent = 'Error submitting.'; return; }
+    document.getElementById('feedbackForm').innerHTML = '<div class="cc-alert cc-alert--success"><i class="fas fa-check-circle"></i> <div>Feedback submitted. Thank you!</div></div>';
+  }).catch(function() {
+    document.getElementById('feedbackMsg').textContent = 'Network error.';
+  });
+}
+</script>
+{% endblock %}

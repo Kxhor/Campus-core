@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block title %}Student Dashboard — CampusCore{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="cc-page-header">
+  <h1 class="cc-page-title">Hello, {{ session.get('user_name', 'Student').split()[0] }}</h1>
+  <p class="cc-page-subtitle">{{ user.department if user and user.department else 'Welcome back to CampusCore' }}</p>
+</div>
+
+<!-- Metrics row -->
+<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:var(--space-6); margin-bottom:var(--space-10);">
+  <!-- Total Events -->
+  <div class="cc-stat-card cc-stat-card--events">
+    <div class="cc-stat-card__top">
+      <div class="cc-stat-card__icon"><i class="fas fa-calendar-alt"></i></div>
+    </div>
+    <div class="cc-stat-card__value">{{ events|length if events else 0 }}</div>
+    <div class="cc-stat-card__label">Upcoming Events</div>
+  </div>
+
+  <!-- Registered Count -->
+  <div class="cc-stat-card cc-stat-card--registered">
+    <div class="cc-stat-card__top">
+      <div class="cc-stat-card__icon"><i class="fas fa-ticket-alt"></i></div>
+    </div>
+    <div class="cc-stat-card__value">{{ reg_count|default(0) }}</div>
+    <div class="cc-stat-card__label">Registered</div>
+  </div>
+
+  <!-- Certificates Count -->
+  <div class="cc-stat-card cc-stat-card--certs">
+    <div class="cc-stat-card__top">
+      <div class="cc-stat-card__icon"><i class="fas fa-certificate"></i></div>
+    </div>
+    <div class="cc-stat-card__value">{{ present_count|default(0) }}</div>
+    <div class="cc-stat-card__label">Certificates Earned</div>
+    {% if (present_count|default(0)) == 0 %}
+      <div style="font-size:10px; color:var(--cc-text-muted); margin-top: -4px;">Attend an event to earn your first certificate</div>
+    {% endif %}
+  </div>
+</div>
+
+<div style="display:grid; grid-template-columns: 1fr 380px; gap:var(--space-8); align-items: start;">
+  <!-- Left column: Upcoming events -->
+  <div class="cc-card">
+    <div class="cc-card__header">
+      <span class="cc-card__title">Upcoming Events</span>
+      <a href="{{ url_for('student_events') }}" class="cc-btn cc-btn--ghost cc-btn--sm">Browse all</a>
+    </div>
+    <div class="cc-card__body" style="padding:0;">
+      {% if events %}
+        {% for event in events[:5] %}
+        <div class="cc-event-list-item" data-event-id="{{ event.id }}">
+          <div class="cc-date-badge">
+            <span class="cc-date-badge__day">{{ event.date.strftime('%d') }}</span>
+            <span class="cc-date-badge__month">{{ event.date.strftime('%b') }}</span>
+          </div>
+          <div class="cc-event-list-item__info">
+            <div class="cc-event-list-item__name">{{ event.title }}</div>
+            <div class="cc-event-list-item__meta">
+              <span><i class="fas fa-map-marker-alt"></i> {{ event.venue or 'TBD' }}</span>
+              {% if event.time %}<span><i class="fas fa-clock"></i> {{ event.time }}</span>{% endif %}
+            </div>
+          </div>
+          <div class="cc-event-list-item__actions">
+            <span class="cc-badge cc-badge--{{ event.category.lower() if event.category else 'general' }}">
+              {{ event.category or 'General' }}
+            </span>
+            {% if event.id in registered_ids %}
+            <span class="cc-badge cc-badge--registered">
+              <i class="fas fa-check" style="font-size:9px;"></i> Registered
+            </span>
+            {% else %}
+            <form action="{{ url_for('register_event', event_id=event.id) }}" method="POST" style="display:inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="cc-btn cc-btn--primary cc-btn--sm">Register</button>
+            </form>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="cc-empty-state" style="padding:var(--space-12) var(--space-6); text-align:center;">
+          <div class="cc-empty-state__icon" style="font-size:48px; color:var(--cc-text-muted); opacity:0.3; margin-bottom:var(--space-4);"><i class="fas fa-calendar-xmark"></i></div>
+          <div class="cc-empty-state__title" style="font-weight:var(--weight-semibold); color:var(--cc-text); margin-bottom:var(--space-2);">No upcoming events</div>
+          <div class="cc-empty-state__desc" style="font-size:var(--text-sm); color:var(--cc-text-muted); margin-bottom:var(--space-6);">Check back soon — new events are added regularly.</div>
+          <a href="{{ url_for('student_events') }}" class="cc-btn cc-btn--outline">Browse all events</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Right column: Sidebar widgets -->
+  <div style="display:flex; flex-direction:column; gap:var(--space-8);">
+    <!-- Quick links card -->
+    <div class="cc-card">
+      <div class="cc-card__header">
+        <span class="cc-card__title">Quick access</span>
+      </div>
+      <div class="cc-card__body" style="display:flex; flex-direction:column; gap:var(--space-2); padding-top:var(--space-4); padding-bottom:var(--space-4);">
+        <a href="{{ url_for('student_events') }}" 
+           style="display:flex; align-items:center; gap:var(--space-3); padding:var(--space-2) var(--space-3); border-radius:var(--radius-md); color:var(--cc-text-secondary); font-size:var(--text-sm); transition:background var(--transition-fast); text-decoration:none;"
+           onmouseover="this.style.background='var(--cc-surface-2)'"
+           onmouseout="this.style.background='transparent'">
+          <i class="fas fa-search" style="color:var(--cc-crimson); width:16px;"></i>
+          Browse Events
+        </a>
+        <a href="{{ url_for('my_events') }}"
+           style="display:flex; align-items:center; gap:var(--space-3); padding:var(--space-2) var(--space-3); border-radius:var(--radius-md); color:var(--cc-text-secondary); font-size:var(--text-sm); transition:background var(--transition-fast); text-decoration:none;"
+           onmouseover="this.style.background='var(--cc-surface-2)'"
+           onmouseout="this.style.background='transparent'">
+          <i class="fas fa-list-check" style="color:var(--cc-crimson); width:16px;"></i>
+          My Events
+        </a>
+        <a href="{{ url_for('student_announcements.announcements') }}"
+           style="display:flex; align-items:center; gap:var(--space-3); padding:var(--space-2) var(--space-3); border-radius:var(--radius-md); color:var(--cc-text-secondary); font-size:var(--text-sm); transition:background var(--transition-fast); text-decoration:none;"
+           onmouseover="this.style.background='var(--cc-surface-2)'"
+           onmouseout="this.style.background='transparent'">
+          <i class="fas fa-bullhorn" style="color:var(--cc-crimson); width:16px;"></i>
+          Announcements
+        </a>
+      </div>
+    </div>
+
+    <!-- Student info card -->
+    <div class="cc-card">
+      <div class="cc-card__body">
+        <div style="display:flex; align-items:center; gap:var(--space-4); margin-bottom:var(--space-4);">
+          <div class="cc-user-avatar" style="width:52px; height:52px; font-size:var(--text-lg);">
+            {{ (session.get('user_name', 'S'))[0].upper() }}
+          </div>
+          <div>
+            <div style="font-weight:var(--weight-semibold); color:var(--cc-text);">
+              {{ session.get('user_name', 'Student') }}
+            </div>
+            <div style="font-size:var(--text-xs); color:var(--cc-text-muted); margin-top:2px;">
+              {{ user.reg_number if user and user.reg_number else 'Student' }}
+            </div>
+          </div>
+        </div>
+        {% if user and user.department %}
+        <div style="display:flex; align-items:center; gap:var(--space-2); font-size:var(--text-xs); color:var(--cc-text-muted);">
+          <i class="fas fa-building"></i>
+          {{ user.department }}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+@media (max-width: 900px) { 
+  .cc-content > div[style*="grid-template-columns: 1fr 380px"] { 
+    grid-template-columns: 1fr !important; 
+  } 
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+(function() {
+  var socket = window._socket;
+  if (!socket) return;
+  var esc = window.escHtml || function(s) { return s; };
+
+  function updateEventCount(delta) {
+    var stat = document.querySelector('.cc-stat-card--events .cc-stat-card__value');
+    if (stat) {
+      var cur = parseInt(stat.textContent) || 0;
+      stat.textContent = Math.max(0, cur + delta);
+    }
+  }
+
+  socket.on('event:created', function(data) {
+    var list = document.querySelector('.cc-card__body');
+    if (!list) return;
+    if (list.querySelector('.cc-event-list-item[data-event-id="' + data.id + '"]')) return;
+    var empty = list.querySelector('.cc-empty-state');
+    if (empty) empty.remove();
+    var row = document.createElement('div');
+    row.className = 'cc-event-list-item';
+    row.setAttribute('data-event-id', data.id);
+    row.innerHTML = '<div class="cc-date-badge">'
+      + '<span class="cc-date-badge__day">' + esc(data.date ? data.date.split('-')[2] : '') + '</span>'
+      + '<span class="cc-date-badge__month">' + esc(data.date_display ? data.date_display.split(' ')[1] : '') + '</span>'
+      + '</div>'
+      + '<div class="cc-event-list-item__info">'
+      + '<div class="cc-event-list-item__name">' + esc(data.title) + '</div>'
+      + '<div class="cc-event-list-item__meta">'
+      + '<span><i class="fas fa-map-marker-alt"></i> ' + esc(data.venue || 'TBD') + '</span>'
+      + '</div>'
+      + '</div>'
+      + '<div class="cc-event-list-item__actions">'
+      + '<span class="cc-badge cc-badge--' + esc(data.category ? data.category.toLowerCase() : 'general') + '">' + esc(data.category || 'General') + '</span>'
+      + '<a href="{{ url_for("student_events") }}" class="cc-btn cc-btn--primary cc-btn--sm">Register</a>'
+      + '</div>';
+    list.insertBefore(row, list.firstChild);
+    updateEventCount(1);
+  });
+
+  socket.on('event:updated', function(data) {
+    var row = document.querySelector('.cc-event-list-item[data-event-id="' + data.id + '"]');
+    if (!row) return;
+    var day = data.date ? data.date.split('-')[2] : '';
+    var mon = data.date_display ? data.date_display.split(' ')[1] : '';
+    row.querySelector('.cc-date-badge__day').textContent = day;
+    row.querySelector('.cc-date-badge__month').textContent = mon;
+    row.querySelector('.cc-event-list-item__name').textContent = data.title;
+    row.querySelector('.cc-event-list-item__meta span').innerHTML = '<i class="fas fa-map-marker-alt"></i> ' + esc(data.venue || 'TBD');
+    var badge = row.querySelector('.cc-badge');
+    badge.className = 'cc-badge cc-badge--' + esc(data.category ? data.category.toLowerCase() : 'general');
+    badge.textContent = data.category || 'General';
+  });
+
+  socket.on('event:deleted', function(data) {
+    var row = document.querySelector('.cc-event-list-item[data-event-id="' + data.id + '"]');
+    if (!row) return;
+    row.remove();
+    updateEventCount(-1);
+    var list = document.querySelector('.cc-card__body');
+    if (list && !list.querySelector('.cc-event-list-item')) {
+      list.innerHTML = '<div class="cc-empty-state" style="padding:var(--space-12) var(--space-6); text-align:center;">'
+          + '<div class="cc-empty-state__icon" style="font-size:48px; color:var(--cc-text-muted); opacity:0.3; margin-bottom:var(--space-4);"><i class="fas fa-calendar-xmark"></i></div>'
+          + '<div class="cc-empty-state__title" style="font-weight:var(--weight-semibold); color:var(--cc-text); margin-bottom:var(--space-2);">No upcoming events</div>'
+          + '<div class="cc-empty-state__desc" style="font-size:var(--text-sm); color:var(--cc-text-muted); margin-bottom:var(--space-6);">Check back soon — new events are added regularly.</div>'
+          + '<a href="{{ url_for("student_events") }}" class="cc-btn cc-btn--outline">Browse all events</a>'
+          + '</div>';
+    }
+  });
+})();
+</script>
+{% endblock %}

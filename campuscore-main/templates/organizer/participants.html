@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+{% block title %}Participants — {{ event.title }}{% endblock %}
+{% block page_title %}<i class="fas fa-users"></i> {{ event.title[:30] ~ '...' if event.title|length > 30 else event.title }}{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="cc-page-header" style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:var(--space-4);">
+  <div>
+    <h1 class="cc-page-title">{{ event.title }}</h1>
+    <p class="cc-page-subtitle">
+      {{ event.date.strftime('%d %b %Y') if event.date else '' }}
+      {% if event.venue %} &middot; {{ event.venue }}{% endif %}
+    </p>
+  </div>
+  <div>
+    <!-- The user requested to keep the existing POST form action, but since it didn't exist in the original file, we provide a placeholder form that matches the spec -->
+    <form method="POST" action="{{ url_for('organizer_manage_attendance', event_id=event.id) if 'organizer_manage_attendance' in request.endpoint else '#' }}" style="display:inline;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+      <button type="submit" class="cc-btn cc-btn--danger">Mark Event Complete</button>
+    </form>
+  </div>
+</div>
+
+<!-- Live Stats Bar -->
+<div class="cc-grid cc-grid--3" style="margin-bottom: var(--space-6);">
+  <div class="cc-stat-card cc-stat-card--events" style="padding: var(--space-4);">
+    <div class="cc-stat-card__icon"><i class="fas fa-users"></i></div>
+    <div class="cc-stat-card__content">
+      <div class="cc-stat-card__label">Total Registered</div>
+      <div class="cc-stat-card__value">{{ registrations|length }}</div>
+    </div>
+  </div>
+  
+  <div class="cc-stat-card cc-stat-card--users" style="padding: var(--space-4);">
+    <div class="cc-stat-card__icon"><i class="fas fa-check-circle"></i></div>
+    <div class="cc-stat-card__content">
+      <div class="cc-stat-card__label">
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--cc-success);animation:pulse-green 2s infinite;margin-right:var(--space-2);"></span>
+        Checked In
+      </div>
+      <div class="cc-stat-card__value" id="live-count">0</div>
+    </div>
+  </div>
+  
+  <div class="cc-stat-card cc-stat-card--registered" style="padding: var(--space-4);">
+    <div class="cc-stat-card__icon"><i class="fas fa-chart-line"></i></div>
+    <div class="cc-stat-card__content">
+      <div class="cc-stat-card__label">Attendance Rate</div>
+      <div class="cc-stat-card__value" id="live-rate">0%</div>
+    </div>
+  </div>
+</div>
+
+<!-- Search + Filter Bar -->
+<div class="cc-card" style="margin-bottom: var(--space-5);">
+  <div class="cc-card__body" style="padding: var(--space-3) var(--space-4);">
+    <form method="GET" style="display:flex; gap:var(--space-4); align-items:center; flex-wrap:wrap;">
+      <div class="cc-search-wrapper" style="flex:1; min-width:200px;">
+        <i class="fas fa-search cc-search-icon"></i>
+        <input type="text" class="cc-input" name="search" placeholder="Search participants..." value="{{ search }}">
+      </div>
+      
+      <div class="cc-tab-group" style="margin:0;">
+        <button type="submit" name="tab" value="all" class="cc-tab {% if not request.args.get('tab') or request.args.get('tab') == 'all' %}active{% endif %}">All</button>
+        <button type="submit" name="tab" value="present" class="cc-tab {% if request.args.get('tab') == 'present' %}active{% endif %}">Present</button>
+        <button type="submit" name="tab" value="absent" class="cc-tab {% if request.args.get('tab') == 'absent' %}active{% endif %}">Absent</button>
+      </div>
+      
+      {% if search or request.args.get('tab') %}
+      <a href="?" class="cc-btn cc-btn--ghost">Clear</a>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+<!-- Two-Column Layout -->
+<div style="display: grid; grid-template-columns: 3fr 2fr; gap: var(--space-6); align-items: start;">
+  
+  <!-- LEFT: Participants Table -->
+  <div class="cc-table-wrapper">
+    <table class="cc-table">
+      <thead>
+        <tr>
+          <th>Student</th>
+          <th>Department</th>
+          <th>Status</th>
+          <th>Attendance</th>
+          <th>Method</th>
+          <th>Time</th>
+          <th style="text-align:right;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for reg, stu in registrations %}
+        <tr>
+          <td>
+            <div style="font-weight: var(--weight-semibold); color: var(--cc-text);">{{ stu.name }}</div>
+            <div style="font-size: var(--text-xs); color: var(--cc-text-muted);">{{ stu.participant_id or stu.reg_number or '—' }}</div>
+          </td>
+          <td style="font-size: var(--text-sm);">{{ stu.department or '—' }}</td>
+          <td>
+            <span class="cc-badge cc-badge--registered">Confirmed</span>
+          </td>
+          <td>
+            {% set is_present = (attendance_map and attendance_map.get(stu.id) == 'present') %}
+            {% if is_present %}
+              <span class="cc-badge cc-badge--active">Present</span>
+            {% else %}
+              <span class="cc-badge cc-badge--cancelled">Absent</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if is_present %}
+              <span class="cc-badge cc-badge--completed" style="font-size:var(--text-xs); padding:2px 6px;">Manual</span>
+            {% else %}
+              —
+            {% endif %}
+          </td>
+          <td style="font-size: var(--text-xs); color: var(--cc-text-muted);">
+            —
+          </td>
+          <td style="text-align:right;">
+            {% if not is_present %}
+            <form method="POST" action="{{ url_for('organizer_manage_attendance', event_id=event.id) if 'organizer_manage_attendance' in request.endpoint else '#' }}" style="display:inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+              <input type="hidden" name="attendance_{{ stu.id }}" value="present">
+              <button type="submit" class="cc-btn cc-btn--success cc-btn--sm">Mark Present</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7">
+            <div class="cc-empty-state">
+              <div class="cc-empty-state__icon"><i class="fas fa-users"></i></div>
+              <div class="cc-empty-state__title">No participants found</div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- RIGHT: QR Scanner Panel -->
+  <div class="cc-card cc-card--elevated" style="position: sticky; top: var(--space-6);">
+    <div class="cc-card__header" style="display:flex; justify-content:space-between; align-items:center;">
+      <h3 class="cc-card__title">QR Scanner</h3>
+      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--cc-success);animation:pulse-green 2s infinite;"></span>
+    </div>
+    <div class="cc-card__body" style="text-align:center;">
+      <!-- Existing QR Scanner HTML from admin/attendance.html -->
+      <div id="qrReader" style="width:100%;max-width:300px;margin:0 auto;"></div>
+      <div id="qrResult" style="margin-top:12px;font-size:0.9rem;"></div>
+      
+      <div style="border-top: 1px solid var(--cc-border-subtle); margin: var(--space-4) 0; padding-top: var(--space-4);">
+        <p style="font-size: var(--text-sm); font-weight: 500; margin-bottom: var(--space-3); color: var(--cc-text-secondary);">Or search manually</p>
+        <!-- The user asked to keep the existing manual search form logic. As it didn't exist in the old template, we implement the layout requested -->
+        <form method="GET" style="display:flex; flex-direction:column; gap:var(--space-3);">
+          <div class="cc-search-wrapper" style="width:100%;">
+            <i class="fas fa-search cc-search-icon"></i>
+            <input type="text" class="cc-input" name="manual_search" placeholder="Enter ID or Name..." style="width:100%;">
+          </div>
+          <button type="submit" class="cc-btn cc-btn--primary" style="width:100%;">Mark Present</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+// QR Scanner Initialization (retained perfectly from admin/attendance.html)
+var qrScannerInstance = null;
+
+function initQRScanner() {
+  var readerEl = document.getElementById('qrReader');
+  if (!readerEl) return;
+  
+  if (typeof Html5Qrcode !== 'undefined') {
+    qrScannerInstance = new Html5Qrcode("qrReader");
+    qrScannerInstance.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: { width: 250, height: 250 } },
+      function(qrMessage) {
+        handleQRScan(qrMessage);
+      },
+      function(error) { /* ignore */ }
+    ).catch(function(err) {
+      document.getElementById('qrResult').innerHTML = '<span style="color:var(--cc-error);">Camera access denied or unavailable.</span>';
+    });
+  } else {
+    document.getElementById('qrResult').innerHTML = '<span style="color:var(--cc-error);">QR scanner library not loaded.</span>';
+  }
+}
+
+function handleQRScan(payload) {
+  if (qrScannerInstance) {
+    qrScannerInstance.pause();
+  }
+  var resultEl = document.getElementById('qrResult');
+  resultEl.innerHTML = '<span style="color:var(--cc-warning);"><i class="fas fa-spinner fa-spin"></i> Verifying...</span>';
+
+  fetch('/organizer/checkin/scan', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ qr_payload: payload })
+  })
+  .then(function(res) { return res.json(); })
+  .then(function(data) {
+    if (data.status === 'checked_in') {
+      resultEl.innerHTML = '<span style="color:var(--cc-success);font-weight:600;"><i class="fas fa-check-circle"></i> Checked in: ' + data.name + '</span>';
+      setTimeout(function() { location.reload(); }, 1500);
+    } else if (data.error === 'already_checked_in') {
+      resultEl.innerHTML = '<span style="color:var(--cc-warning);"><i class="fas fa-exclamation-triangle"></i> Already checked in</span>';
+      setTimeout(function() { if(qrScannerInstance) qrScannerInstance.resume(); resultEl.innerHTML=''; }, 2000);
+    } else {
+      resultEl.innerHTML = '<span style="color:var(--cc-error);"><i class="fas fa-times-circle"></i> ' + (data.error || 'Invalid QR') + '</span>';
+      setTimeout(function() { if(qrScannerInstance) qrScannerInstance.resume(); resultEl.innerHTML=''; }, 2000);
+    }
+  })
+  .catch(function() {
+    resultEl.innerHTML = '<span style="color:var(--cc-error);">Network error</span>';
+    setTimeout(function() { if(qrScannerInstance) qrScannerInstance.resume(); resultEl.innerHTML=''; }, 2000);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  initQRScanner();
+});
+
+// Assuming Socket.IO is initialized elsewhere in the app
+if (typeof socket !== 'undefined') {
+  socket.on('attendance:updated', function(data) {
+    // Re-load the page or update live-count / live-rate here
+    console.log("Attendance updated:", data);
+  });
+  
+  socket.on('attendance:new', function(data) {
+    console.log("New attendance:", data);
+  });
+}
+</script>
+{% endblock %}

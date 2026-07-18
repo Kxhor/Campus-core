@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}My Events — CampusCore{% endblock %}
+{% block page_title %}<i class="fas fa-ticket-alt"></i> My Events{% endblock %}
+
+{% block content %}
+<div class="cc-page-header">
+  <div>
+    <h1 class="cc-page-heading">My Events</h1>
+    <p class="cc-page-sub">Your registration history and upcoming attendance</p>
+  </div>
+</div>
+
+{% set current_tab = request.args.get('tab', 'all') %}
+
+<!-- TAB GROUP -->
+<div class="cc-tab-group" style="margin-bottom: var(--space-6);">
+  <a href="?tab=all" class="cc-tab {% if current_tab == 'all' %}active{% endif %}">All</a>
+  <a href="?tab=upcoming" class="cc-tab {% if current_tab == 'upcoming' %}active{% endif %}">Upcoming</a>
+  <a href="?tab=attended" class="cc-tab {% if current_tab == 'attended' %}active{% endif %}">Attended</a>
+  <a href="?tab=waitlisted" class="cc-tab {% if current_tab == 'waitlisted' %}active{% endif %}">Waitlisted</a>
+  <a href="?tab=cancelled" class="cc-tab {% if current_tab == 'cancelled' %}active{% endif %}">Cancelled</a>
+</div>
+
+{% set ns = namespace(count=0) %}
+
+<!-- Pre-calculate count for the active tab -->
+{% for reg, event in registrations %}
+  {% set att_status = attendance_map.get(event.id, 'not_marked') %}
+  {% set show = false %}
+  
+  {% if current_tab == 'all' %}{% set show = true %}
+  {% elif current_tab == 'upcoming' and reg.status == 'confirmed' and event.date >= today %}{% set show = true %}
+  {% elif current_tab == 'attended' and att_status == 'present' %}{% set show = true %}
+  {% elif current_tab == 'waitlisted' and reg.status == 'waitlisted' %}{% set show = true %}
+  {% elif current_tab == 'cancelled' and reg.status == 'cancelled' %}{% set show = true %}
+  {% endif %}
+  
+  {% if show %}
+    {% set ns.count = ns.count + 1 %}
+  {% endif %}
+{% endfor %}
+
+{% if ns.count > 0 %}
+<div class="cc-card">
+  <div class="cc-card__header">
+    <h3>{{ current_tab | capitalize }} ({{ ns.count }})</h3>
+  </div>
+  <div class="cc-card__body" style="padding: 0;">
+    {% for reg, event in registrations %}
+      {% set att_status = attendance_map.get(event.id, 'not_marked') %}
+      {% set show = false %}
+      
+      {% if current_tab == 'all' %}{% set show = true %}
+      {% elif current_tab == 'upcoming' and reg.status == 'confirmed' and event.date >= today %}{% set show = true %}
+      {% elif current_tab == 'attended' and att_status == 'present' %}{% set show = true %}
+      {% elif current_tab == 'waitlisted' and reg.status == 'waitlisted' %}{% set show = true %}
+      {% elif current_tab == 'cancelled' and reg.status == 'cancelled' %}{% set show = true %}
+      {% endif %}
+      
+      {% if show %}
+        <div class="cc-event-list-item">
+          <!-- LEFT: Date Badge -->
+          <div class="cc-date-badge">
+            <div class="cc-date-badge__month">{{ event.date.strftime('%b') }}</div>
+            <div class="cc-date-badge__day">{{ event.date.strftime('%d') }}</div>
+          </div>
+          
+          <!-- CENTER: Details -->
+          <div class="cc-event-list-item__info">
+            <div class="cc-event-list-item__name">{{ event.title }}</div>
+            <div class="cc-event-list-item__meta">
+              <span><i class="fas fa-map-marker-alt"></i> {{ event.venue or '—' }}</span>
+              {% if event.time %}
+                <span><i class="fas fa-clock"></i> {{ event.time }}</span>
+              {% endif %}
+            </div>
+          </div>
+          
+          <!-- RIGHT: Status & Action -->
+          <div class="cc-event-list-item__actions" style="display: flex; align-items: center; gap: var(--space-4);">
+            {% if reg.status == 'confirmed' and event.date >= today %}
+              <span class="cc-badge cc-badge--upcoming">Upcoming</span>
+              <a href="{{ url_for('student_event_detail', event_id=event.id) }}" class="cc-btn cc-btn--ghost cc-btn--sm">View</a>
+            
+            {% elif reg.status == 'confirmed' and att_status == 'present' %}
+              <span class="cc-badge cc-badge--completed">Attended</span>
+              <div style="display: flex; align-items: center; gap: var(--space-2);">
+                <a href="{{ url_for('download_certificate', event_id=event.id) }}" class="cc-btn cc-btn--primary cc-btn--sm">
+                  <i class="fas fa-download"></i> Download Certificate
+                </a>
+              </div>
+              
+            {% elif reg.status == 'waitlisted' %}
+              <span class="cc-badge cc-badge--pending">Waitlisted</span>
+              <div style="font-size: var(--text-xs); color: var(--cc-text-muted);">Position #{{ reg.waitlist_position if reg.waitlist_position else '?' }}</div>
+              <form method="POST" action="{{ url_for('deregister_event', event_id=event.id) }}" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="cc-btn cc-btn--ghost cc-btn--sm" onclick="return confirm('Cancel waitlist?');">Cancel</button>
+              </form>
+              
+            {% elif reg.status == 'cancelled' %}
+              <span class="cc-badge cc-badge--cancelled">Cancelled</span>
+              
+            {% else %}
+              <span class="cc-badge cc-badge--neutral">Past / Not Attended</span>
+              <a href="{{ url_for('student_event_detail', event_id=event.id) }}" class="cc-btn cc-btn--ghost cc-btn--sm">View</a>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+</div>
+{% else %}
+<div class="cc-card">
+  <div class="cc-empty-state">
+    {% if current_tab == 'upcoming' %}
+      <i class="fas fa-calendar cc-empty-state__icon"></i>
+      <h3 class="cc-empty-state__title">No upcoming events</h3>
+      <p class="cc-empty-state__desc">Browse events to register.</p>
+    {% elif current_tab == 'attended' %}
+      <i class="fas fa-check-circle cc-empty-state__icon"></i>
+      <h3 class="cc-empty-state__title">No attended events yet</h3>
+      <p class="cc-empty-state__desc">Attend events to earn certificates.</p>
+    {% elif current_tab == 'waitlisted' %}
+      <i class="fas fa-hourglass cc-empty-state__icon"></i>
+      <h3 class="cc-empty-state__title">No waitlists</h3>
+      <p class="cc-empty-state__desc">You are not on any waitlists.</p>
+    {% elif current_tab == 'cancelled' %}
+      <i class="fas fa-times-circle cc-empty-state__icon"></i>
+      <h3 class="cc-empty-state__title">No cancelled registrations</h3>
+    {% else %}
+      <i class="fas fa-ticket-alt cc-empty-state__icon"></i>
+      <h3 class="cc-empty-state__title">No registered events</h3>
+      <p class="cc-empty-state__desc">You haven't registered for any events yet.</p>
+    {% endif %}
+    
+    {% if current_tab in ['all', 'upcoming'] %}
+      <a href="{{ url_for('student_events') }}" class="cc-btn cc-btn--primary" style="margin-top: var(--space-4);">Browse Events</a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<div class="cc-card" style="margin-top: var(--space-6); background: var(--cc-sidebar-bg);">
+  <div class="cc-card__body" style="display: flex; gap: var(--space-4); align-items: flex-start;">
+    <i class="fas fa-info-circle" style="color: var(--cc-primary); margin-top: 4px;"></i>
+    <p style="font-size: var(--text-sm); color: var(--cc-text-secondary); margin: 0; line-height: 1.5;">
+      Certificates are automatically available when your attendance is marked as <strong>Present</strong> by an admin. Download your certificate as a professionally designed PDF.
+    </p>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+(function() {
+  var socket = window._socket;
+  if (!socket) return;
+  socket.on('attendance:updated', function(data) {
+    // Optionally trigger a page reload or visually update logic to refresh states
+    // A simple reload works perfectly to reflect the exact state across tabs
+    if(data.status === 'present') {
+      window.location.reload();
+    }
+  });
+})();
+</script>
+{% endblock %}

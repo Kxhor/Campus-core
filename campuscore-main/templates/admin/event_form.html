@@ -1,0 +1,406 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if event else 'Create' }} Event{% endblock %}
+{% block page_title %}<i class="fas fa-calendar-plus"></i> {{ 'Edit Event: ' ~ event.title if event else 'Create Event' }}{% endblock %}
+
+{% block content %}
+<div class="cc-page-header">
+  <div>
+    <h1 class="cc-page-heading">{{ 'Edit Event: ' ~ event.title if event else 'Create Event' }}</h1>
+    <p class="cc-page-sub">{{ 'Update the event details below.' if event else 'Fill in the details to create a new event.' }}</p>
+  </div>
+</div>
+
+<form method="POST" class="event-form" id="eventForm" enctype="multipart/form-data" onsubmit="return validateEventForm()" data-skip-validation="0" style="max-width: 760px; margin: 0 auto; padding-bottom: 80px;">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+
+  <!-- SECTION 1: Basic Information -->
+  <div class="cc-card" style="margin-bottom: var(--space-6);">
+    <div class="cc-card__header">
+      <h3 class="cc-card__title">Basic Information</h3>
+    </div>
+    <div class="cc-card__body" style="display: flex; flex-direction: column; gap: var(--space-5);">
+      <div>
+        <label class="cc-label">Event Title <span style="color:var(--cc-error);">*</span></label>
+        <input type="text" class="cc-input" name="title" id="ev_title" value="{{ event.title if event else '' }}" style="width: 100%;" required>
+        <small class="field-error" id="title_error" style="display:none; color:var(--cc-error); font-size:var(--text-xs); margin-top:4px;">Title is required</small>
+      </div>
+      <div>
+        <label class="cc-label">Description <span style="color:var(--cc-error);">*</span></label>
+        <textarea class="cc-textarea" name="description" id="ev_desc" style="min-height: 160px; resize: vertical; width: 100%;" required>{{ event.description if event else '' }}</textarea>
+        <small class="field-error" id="desc_error" style="display:none; color:var(--cc-error); font-size:var(--text-xs); margin-top:4px;">Description is required</small>
+      </div>
+      <div>
+        <label class="cc-label">Category</label>
+        <select name="category" class="cc-select" style="width: 100%;">
+          <option value="General" {% if event and event.category == 'General' %}selected{% endif %}>General</option>
+          <option value="Technical" {% if event and event.category == 'Technical' %}selected{% endif %}>Technical</option>
+          <option value="Cultural" {% if event and event.category == 'Cultural' %}selected{% endif %}>Cultural</option>
+          <option value="Sports" {% if event and event.category == 'Sports' %}selected{% endif %}>Sports</option>
+          <option value="Workshop" {% if event and event.category == 'Workshop' %}selected{% endif %}>Workshop</option>
+          <option value="Seminar" {% if event and event.category == 'Seminar' %}selected{% endif %}>Seminar</option>
+          <option value="Competition" {% if event and event.category == 'Competition' %}selected{% endif %}>Competition</option>
+        </select>
+      </div>
+      <div>
+        <label class="cc-label">Tags</label>
+        <div style="display: flex; gap: var(--space-2);">
+          <input type="text" class="cc-input" id="tagInput" placeholder="comma-separated, e.g. coding, hackathon" style="flex: 1;">
+          <button type="button" class="cc-btn cc-btn--secondary" onclick="addTag()">Add</button>
+        </div>
+        <div class="cc-input-hint">Press enter or use commas to separate tags</div>
+        <input type="hidden" name="tags" id="tagsHidden" value="{{ tags|join(',') if tags else '' }}">
+        <div id="tagContainer" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px;">
+          {% if tags %}
+            {% for tag in tags %}
+            <span class="tag-pill" style="display:inline-flex; align-items:center; gap:4px; background:var(--cc-surface-2); padding:2px 8px; border-radius:12px; font-size:var(--text-xs);">
+              {{ tag }}
+              <button type="button" onclick="removeTag(this)" style="background:none; border:none; cursor:pointer; color:var(--cc-text-muted);">&times;</button>
+            </span>
+            {% endfor %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: Date & Time -->
+  <div class="cc-card" style="margin-bottom: var(--space-6);">
+    <div class="cc-card__header">
+      <h3 class="cc-card__title">Date & Time</h3>
+    </div>
+    <div class="cc-card__body">
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-4); margin-bottom: var(--space-4);">
+        <div>
+          <label class="cc-label">Event Date <span style="color:var(--cc-error);">*</span></label>
+          <input type="date" class="cc-input" name="date" id="ev_date" value="{{ event.date.strftime('%Y-%m-%d') if event and event.date else '' }}" style="width: 100%;" required>
+          <small class="field-error" id="date_error" style="display:none; color:var(--cc-error); font-size:var(--text-xs); margin-top:4px;">Date is required</small>
+        </div>
+        <div>
+          <label class="cc-label">Start Time <span style="color:var(--cc-error);">*</span></label>
+          <input type="time" class="cc-input" name="time" id="ev_time" value="{{ event_time if event_time else (event.time if event else '') }}" style="width: 100%;" required>
+          <small class="field-error" id="time_error" style="display:none; color:var(--cc-error); font-size:var(--text-xs); margin-top:4px;">Time is required</small>
+        </div>
+        <div>
+          <label class="cc-label">End Time</label>
+          <input type="time" class="cc-input" name="end_time" value="{{ event.end_time if event and event.end_time else '' }}" style="width: 100%;">
+        </div>
+      </div>
+      <div>
+        <label class="cc-label">Registration Deadline</label>
+        <input type="datetime-local" class="cc-input" name="registration_deadline" value="{{ event.registration_deadline.strftime('%Y-%m-%dT%H:%M') if event and event.registration_deadline else '' }}" style="width: 100%;">
+        <div class="cc-input-hint">Students cannot register after this deadline</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: Venue & Capacity -->
+  <div class="cc-card" style="margin-bottom: var(--space-6);">
+    <div class="cc-card__header">
+      <h3 class="cc-card__title">Venue & Capacity</h3>
+    </div>
+    <div class="cc-card__body">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
+        <div>
+          <label class="cc-label">Location <span style="color:var(--cc-error);">*</span></label>
+          <input type="text" class="cc-input" name="venue" id="ev_venue" value="{{ event.venue if event else '' }}" placeholder="Building name, room number, or online platform" style="width: 100%;" required>
+          <small class="field-error" id="venue_error" style="display:none; color:var(--cc-error); font-size:var(--text-xs); margin-top:4px;">Location is required</small>
+        </div>
+        <div>
+          <label class="cc-label">Max Participants <span style="color:var(--cc-error);">*</span></label>
+          <input type="number" class="cc-input" name="max_participants" value="{{ event.max_participants if event else 50 }}" min="1" max="5000" style="width: 100%;" required>
+          <div class="cc-input-hint">Recommended: 20–500 for campus events</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 4: Event Image / Brochure -->
+  <div class="cc-card" style="margin-bottom: var(--space-6);">
+    <div class="cc-card__header">
+      <h3 class="cc-card__title">Media & Documents</h3>
+    </div>
+    <div class="cc-card__body">
+      <div style="margin-bottom: var(--space-5);">
+        <label class="cc-label">Event Banner URL</label>
+        <input type="url" class="cc-input" name="image_url" value="{{ event.image_url if event else '' }}" placeholder="https://example.com/image.jpg" style="width: 100%;">
+        <div class="cc-input-hint">Provide a URL to an event banner image</div>
+      </div>
+
+      <div>
+        <label class="cc-label">Event Brochure (PDF)</label>
+        
+        {% if event and event.pdf_file %}
+        <div class="pdf-existing" style="display:flex; align-items:center; gap:var(--space-3); padding:var(--space-3); border:1px solid var(--cc-border-subtle); border-radius:var(--radius-md); margin-bottom:var(--space-4); background:var(--cc-surface-2);">
+          <i class="fas fa-file-pdf" style="color:#dc2626; font-size: 24px;"></i>
+          <span style="flex:1; font-weight: 500; font-size: var(--text-sm);">{{ event.pdf_file.split('--',1)[1] if '--' in event.pdf_file else event.pdf_file }}</span>
+          <a href="{{ url_for('static', filename='uploads/' + event.pdf_file) }}" target="_blank" class="cc-btn cc-btn--ghost cc-btn--sm">View</a>
+          <label style="display:flex; align-items:center; gap:4px; font-size:var(--text-xs); color:var(--cc-error); cursor:pointer;">
+            <input type="checkbox" name="remove_pdf" value="1" onclick="document.getElementById('eventForm').dataset.skipValidation='1'" onchange="document.getElementById('eventForm').submit()"> Remove
+          </label>
+        </div>
+        {% endif %}
+
+        <div class="upload-zone" id="pdfDropArea" style="position:relative; border: 2px dashed var(--cc-border-strong); border-radius: var(--radius-xl); padding: var(--space-10); text-align: center; cursor: pointer; transition: border-color var(--transition-fast), background var(--transition-fast);">
+          <div id="pdfPlaceholder">
+            <i class="fas fa-cloud-upload-alt" style="font-size: 32px; color: var(--cc-text-muted); margin-bottom: var(--space-3);"></i>
+            <div style="font-weight: 500;">Click to upload or drag & drop</div>
+            <div style="font-size: var(--text-xs); color: var(--cc-text-muted); margin-top: 4px;">PDF only, max 16MB</div>
+          </div>
+          <div id="pdfFileInfo" style="display:none; align-items:center; justify-content:center; gap:12px;">
+            <i class="fas fa-file-pdf" style="font-size: 24px; color: #dc2626;"></i>
+            <div style="text-align:left;">
+              <div id="pdfFileName" style="font-weight: 500; font-size: var(--text-sm);"></div>
+              <div id="pdfFileSize" style="font-size: var(--text-xs); color: var(--cc-text-muted);"></div>
+            </div>
+            <button type="button" class="cc-btn cc-btn--ghost cc-btn--sm" onclick="clearPdfUpload()">Remove</button>
+          </div>
+          <input type="file" name="pdf_file" id="pdfInput" accept=".pdf,application/pdf" style="opacity:0; position:absolute; inset:0; width:100%; height:100%; cursor:pointer;">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 5: Additional Settings (Signatories) -->
+  <div class="cc-card" style="margin-bottom: var(--space-6);" id="signatorySection">
+    <div class="cc-card__header">
+      <h3 class="cc-card__title">Certificate Signatories</h3>
+    </div>
+    <div class="cc-card__body">
+      {% if event and event.id %}
+      <div id="signatoryList" style="margin-bottom:14px;">
+        {% if event.signatories %}
+          {% for sig in event.signatories|sort(attribute='ordering') %}
+          <div class="signatory-row" data-id="{{ sig.id }}" style="display:flex; align-items:center; gap:12px; padding:10px; border:1px solid var(--cc-border-subtle); border-radius:var(--radius-sm); margin-bottom:8px;">
+            <div style="width:34px; height:34px; border-radius:8px; background:var(--cc-surface-3); display:flex; align-items:center; justify-content:center; font-size:var(--text-xs); font-weight:bold; color:var(--cc-text);">
+              {{ sig.name[:2].upper() }}
+            </div>
+            <div style="flex:1;">
+              <strong style="font-size:var(--text-sm);">{{ sig.name }}</strong>
+              <span style="color:var(--cc-text-muted); font-size:var(--text-xs);"> — {{ sig.title }}</span>
+              {% if sig.signature_image %}
+              <span style="margin-left:6px; padding:2px 8px; background:#d1fae5; color:#065f46; border-radius:4px; font-size:var(--text-xs); font-weight:500;">Signature on file</span>
+              {% endif %}
+            </div>
+            <button type="button" class="cc-btn cc-btn--ghost cc-btn--sm" onclick="removeSignatory({{ sig.id }})" aria-label="Remove signatory"><i class="fas fa-trash" style="color:var(--cc-error);"></i></button>
+          </div>
+          {% endfor %}
+        {% endif %}
+      </div>
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <input type="text" id="sigName" class="cc-input" placeholder="Full name" style="flex:1; min-width:160px;">
+        <input type="text" id="sigTitle" class="cc-input" placeholder="Title" style="flex:1; min-width:140px;">
+        <input type="file" id="sigImageInput" accept="image/png,image/jpeg,image/gif" style="display:none;">
+        <button type="button" class="cc-btn cc-btn--secondary" onclick="document.getElementById('sigImageInput').click()"><i class="fas fa-image"></i> Image</button>
+        <button type="button" class="cc-btn cc-btn--primary" onclick="addSignatory()"><i class="fas fa-plus"></i> Add</button>
+      </div>
+      <small id="sigNameError" style="color:var(--cc-error); display:none; font-size:var(--text-xs); margin-top:4px;">Name is required</small>
+      {% else %}
+      <div style="display:flex; align-items:center; gap:10px; padding:16px; background:var(--cc-surface-2); border:1px dashed var(--cc-border-subtle); border-radius:var(--radius-sm); color:var(--cc-text-muted); font-size:var(--text-sm);">
+        <i class="fas fa-save" style="font-size:1.2rem;"></i>
+        <p style="margin:0;">Save the event first to manage signatories.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- STICKY FORM FOOTER -->
+  <div style="position: sticky; bottom: 0; z-index: 10; background: var(--cc-surface); border-top: 1px solid var(--cc-border); padding: var(--space-4) var(--space-8); display: flex; justify-content: flex-end; gap: var(--space-3); margin: 0 calc(var(--space-8) * -1);">
+    <a href="{{ url_for('organizer_events') }}" class="cc-btn cc-btn--ghost">Cancel</a>
+    <button type="submit" name="action" value="draft" class="cc-btn cc-btn--secondary">Save Draft</button>
+    <button type="submit" name="action" value="submit" class="cc-btn cc-btn--primary">
+      {{ 'Update Event' if event else 'Submit for Approval' }}
+    </button>
+  </div>
+
+</form>
+{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+.upload-zone:hover {
+  border-color: var(--cc-crimson) !important;
+  background: var(--cc-crimson-muted-2) !important;
+}
+.upload-zone.dragover {
+  border-color: var(--cc-crimson) !important;
+  background: var(--cc-crimson-muted-2) !important;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const pdfInput = document.getElementById('pdfInput');
+const pdfDropArea = document.getElementById('pdfDropArea');
+const pdfPlaceholder = document.getElementById('pdfPlaceholder');
+const pdfFileInfo = document.getElementById('pdfFileInfo');
+const pdfFileName = document.getElementById('pdfFileName');
+const pdfFileSize = document.getElementById('pdfFileSize');
+
+pdfInput.addEventListener('change', handlePdfFile);
+
+pdfDropArea.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  pdfDropArea.classList.add('dragover');
+});
+pdfDropArea.addEventListener('dragleave', () => {
+  pdfDropArea.classList.remove('dragover');
+});
+pdfDropArea.addEventListener('drop', (e) => {
+  e.preventDefault();
+  pdfDropArea.classList.remove('dragover');
+  if (e.dataTransfer.files.length) {
+    pdfInput.files = e.dataTransfer.files;
+    handlePdfFile();
+  }
+});
+
+function handlePdfFile() {
+  const file = pdfInput.files[0];
+  if (!file) return;
+  if (file.type !== 'application/pdf') {
+    alert('Please select a PDF file.');
+    pdfInput.value = '';
+    return;
+  }
+  if (file.size > 16 * 1024 * 1024) {
+    alert('File is too large. Maximum size is 16 MB.');
+    pdfInput.value = '';
+    return;
+  }
+  pdfPlaceholder.style.display = 'none';
+  pdfFileInfo.style.display = 'flex';
+  pdfFileName.textContent = file.name;
+  pdfFileSize.textContent = (file.size / 1024 / 1024).toFixed(1) + ' MB';
+}
+
+function clearPdfUpload() {
+  pdfInput.value = '';
+  pdfFileInfo.style.display = 'none';
+  pdfPlaceholder.style.display = 'block';
+}
+
+let tags = [{{ tags|map('tojson')|join(',') if tags else '' }}];
+
+function addTag() {
+  const input = document.getElementById('tagInput');
+  const tag = input.value.trim();
+  if (tag && !tags.includes(tag)) {
+    tags.push(tag);
+    renderTags();
+    input.value = '';
+  }
+}
+
+function removeTag(btn) {
+  const pill = btn.parentElement;
+  let tag = pill.textContent.trim().replace('×', '').trim();
+  tags = tags.filter(t => t !== tag);
+  renderTags();
+}
+
+function renderTags() {
+  const container = document.getElementById('tagContainer');
+  const hidden = document.getElementById('tagsHidden');
+  container.innerHTML = tags.map(t =>
+    `<span class="tag-pill" style="display:inline-flex; align-items:center; gap:4px; background:var(--cc-surface-2); padding:2px 8px; border-radius:12px; font-size:var(--text-xs);">${t}<button type="button" onclick="removeTag(this)" style="background:none; border:none; cursor:pointer; color:var(--cc-text-muted);">&times;</button></span>`
+  ).join('');
+  hidden.value = tags.join(',');
+}
+
+document.getElementById('tagInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    if (e.key === ',') {
+      this.value = this.value.replace(',', '');
+    }
+    addTag();
+  }
+});
+
+function validateEventForm() {
+  if (document.getElementById('eventForm').dataset.skipValidation === '1') return true;
+  let valid = true;
+  const fields = [
+    { id: 'ev_title', error: 'title_error' },
+    { id: 'ev_desc', error: 'desc_error' },
+    { id: 'ev_date', error: 'date_error' },
+    { id: 'ev_time', error: 'time_error' },
+    { id: 'ev_venue', error: 'venue_error' },
+  ];
+  fields.forEach(f => {
+    const el = document.getElementById(f.id);
+    const err = document.getElementById(f.error);
+    if (!el.value.trim()) {
+      err.style.display = 'block';
+      el.style.borderColor = 'var(--cc-error)';
+      valid = false;
+      el.addEventListener('input', function handler() {
+        el.style.borderColor = '';
+        err.style.display = 'none';
+        el.removeEventListener('input', handler);
+      });
+    } else {
+      err.style.display = 'none';
+    }
+  });
+  return valid;
+}
+
+let sigImageFile = null;
+document.getElementById('sigImageInput').addEventListener('change', function(e) {
+  sigImageFile = e.target.files[0];
+  if (sigImageFile) {
+    this.previousElementSibling.innerHTML = '<i class="fas fa-check"></i> Image selected';
+  }
+});
+
+function addSignatory() {
+  const name = document.getElementById('sigName').value.trim();
+  const title = document.getElementById('sigTitle').value.trim();
+  const errEl = document.getElementById('sigNameError');
+  if (!name) {
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+  const formData = new FormData();
+  formData.append('name', name);
+  formData.append('title', title || 'Event Coordinator');
+  if (sigImageFile) {
+    formData.append('signature_image', sigImageFile);
+  }
+  formData.append('ordering', document.querySelectorAll('.signatory-row').length);
+  fetch('/api/events/{{ event.id if event else 0 }}/signatories/add', { method: 'POST', body: formData })
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) { alert(data.error); return; }
+      const list = document.getElementById('signatoryList');
+      const div = document.createElement('div');
+      div.className = 'signatory-row';
+      div.dataset.id = data.id;
+      div.style.cssText = 'display:flex; align-items:center; gap:12px; padding:10px; border:1px solid var(--cc-border-subtle); border-radius:var(--radius-sm); margin-bottom:8px;';
+      div.innerHTML = '<div style="width:34px; height:34px; border-radius:8px; background:var(--cc-surface-3); display:flex; align-items:center; justify-content:center; font-size:var(--text-xs); font-weight:bold; color:var(--cc-text);">' + (data.name.slice(0,2).toUpperCase()) + '</div><div style="flex:1;"><strong style="font-size:var(--text-sm);">' + data.name + '</strong><span style="color:var(--cc-text-muted); font-size:var(--text-xs);"> — ' + data.title + '</span>' + (data.signature_image ? '<span style="margin-left:6px; padding:2px 8px; background:#d1fae5; color:#065f46; border-radius:4px; font-size:var(--text-xs); font-weight:500;">Signature on file</span>' : '') + '</div><button type="button" class="cc-btn cc-btn--ghost cc-btn--sm" onclick="removeSignatory(' + data.id + ')" aria-label="Remove signatory"><i class="fas fa-trash" style="color:var(--cc-error);"></i></button>';
+      list.appendChild(div);
+      document.getElementById('sigName').value = '';
+      document.getElementById('sigTitle').value = '';
+      sigImageFile = null;
+      document.getElementById('sigImageInput').value = '';
+      document.getElementById('sigImageInput').previousElementSibling.innerHTML = '<i class="fas fa-image"></i> Image';
+    })
+    .catch(() => alert('Failed to add signatory.'));
+}
+
+function removeSignatory(id) {
+  if (!confirm('Remove this signatory?')) return;
+  fetch('/api/events/{{ event.id if event else 0 }}/signatories/' + id + '/remove', { method: 'POST' })
+    .then(r => r.json())
+    .then(() => {
+      const item = document.querySelector('.signatory-row[data-id="' + id + '"]');
+      if (item) item.remove();
+    })
+    .catch(() => alert('Failed to remove signatory.'));
+}
+</script>
+{% endblock %}

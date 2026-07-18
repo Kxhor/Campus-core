@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}Students{% endblock %}
+{% block page_title %}<i class="fas fa-user-graduate"></i> Students{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="cc-page-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:var(--space-4);">
+  <div>
+    <h1 class="cc-page-title">Students</h1>
+    <p class="cc-page-subtitle">{{ students|length }} registered students</p>
+  </div>
+  <div>
+    <a href="{{ url_for('admin_create_user') }}" class="cc-btn cc-btn--primary">Add Student</a>
+  </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="cc-card" style="margin-bottom: var(--space-5);">
+  <div class="cc-card__body" style="padding: var(--space-3) var(--space-4);">
+    <form method="GET" style="display:flex; gap:var(--space-3); align-items:center; flex-wrap:wrap;">
+      <div class="cc-search-wrapper" style="flex:1; min-width:200px;">
+        <i class="fas fa-search cc-search-icon"></i>
+        <input type="text" name="search" class="cc-input" placeholder="Search by name, email, or register number..." value="{{ search }}">
+      </div>
+
+      <div class="cc-tab-group" style="margin:0;">
+        <button type="submit" name="status" value="" class="cc-tab {% if not request.args.get('status') %}active{% endif %}">All</button>
+        <button type="submit" name="status" value="active" class="cc-tab {% if request.args.get('status') == 'active' %}active{% endif %}">Active</button>
+        <button type="submit" name="status" value="inactive" class="cc-tab {% if request.args.get('status') == 'inactive' %}active{% endif %}">Inactive</button>
+      </div>
+      
+      <button type="submit" class="cc-btn cc-btn--secondary">Filter</button>
+      
+      {% if search or request.args.get('status') %}
+      <a href="{{ url_for('admin_students') }}" class="cc-btn cc-btn--ghost">Clear</a>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+<!-- Bulk Action Bar -->
+<div id="bulk-bar" style="display:none; align-items:center; justify-content:space-between; padding:var(--space-3) var(--space-4); margin-bottom:var(--space-4); background:var(--cc-crimson); color:white; border-radius:var(--radius-md);">
+  <span id="bulk-count" style="font-weight:600; font-size:var(--text-sm);">0 selected</span>
+  <div style="display:flex; gap:var(--space-2);">
+    <button class="cc-btn cc-btn--sm" style="background:rgba(255,255,255,0.2); color:white; border:none;" onclick="bulkAction('delete')"><i class="fas fa-trash"></i> Delete</button>
+    <button class="cc-btn cc-btn--sm" style="background:rgba(255,255,255,0.2); color:white; border:none;" onclick="bulkExport()"><i class="fas fa-download"></i> Export CSV</button>
+    <button class="cc-btn cc-btn--sm" style="background:transparent; color:white; border:1px solid rgba(255,255,255,0.5);" onclick="clearSelection()">Deselect All</button>
+  </div>
+</div>
+
+<!-- Students Table -->
+<div class="cc-table-wrapper">
+  <table class="cc-table">
+    <thead>
+      <tr>
+        <th style="width:40px;"><input type="checkbox" id="select-all" onchange="toggleAll(this)" style="cursor:pointer;"></th>
+        <th>Student</th>
+        <th>Register Number</th>
+        <th>Department</th>
+        <th>Year of Study</th>
+        <th>Joined</th>
+        <th>Status</th>
+        <th>Events</th>
+        <th style="text-align:right;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in students %}
+      <tr data-id="{{ u.id }}">
+        <td><input type="checkbox" class="user-check" value="{{ u.id }}" onchange="updateBulkBar()" style="cursor:pointer;"></td>
+        <td>
+          <div style="display:flex; align-items:center; gap:var(--space-3);">
+            <div class="cc-user-avatar" style="width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:50%; color:white; font-weight:bold; background:var(--cc-info);">
+              {{ u.name[0] }}
+            </div>
+            <div>
+              <div style="font-weight:var(--weight-semibold); color:var(--cc-text);">{{ u.name }}</div>
+              <div style="font-size:var(--text-xs); color:var(--cc-text-muted);">{{ u.email }}</div>
+            </div>
+          </div>
+        </td>
+        <td style="font-size:var(--text-sm);">
+          {{ u.reg_number or '—' }}
+        </td>
+        <td style="font-size:var(--text-sm); color:var(--cc-text-secondary);">
+          {{ u.department or '—' }}
+        </td>
+        <td style="font-size:var(--text-sm);">
+          {{ u.year_of_study or '—' }}
+        </td>
+        <td style="font-size:var(--text-sm);">
+          {{ u.created_at.strftime('%d %b %Y') if u.created_at else '—' }}
+        </td>
+        <td>
+          {% if u.is_active is not defined or u.is_active %}
+            <span class="cc-badge cc-badge--active">Active</span>
+          {% else %}
+            <span class="cc-badge cc-badge--cancelled">Inactive</span>
+          {% endif %}
+        </td>
+        <td style="font-weight:var(--weight-semibold);">
+          {{ u.registrations|length if u.registrations else '0' }}
+        </td>
+        <td style="text-align:right;">
+          <div style="display:flex; align-items:center; justify-content:flex-end; gap:var(--space-2);">
+            <a href="{{ url_for('admin_user_detail', uid=u.id) }}" class="cc-btn cc-btn--secondary cc-btn--sm cc-btn--icon-only" title="View"><i class="fas fa-eye"></i></a>
+            <a href="{{ url_for('admin_edit_user', uid=u.id) }}" class="cc-btn cc-btn--secondary cc-btn--sm cc-btn--icon-only" title="Edit"><i class="fas fa-pencil"></i></a>
+            {% if u.id != session.user_id %}
+            <form method="POST" action="{{ url_for('admin_toggle_user_status', uid=u.id) }}" style="display:inline" onsubmit="return confirm('{% if u.is_active is not defined or u.is_active %}Disable{% else %}Enable{% endif %} {{ u.name }}?')">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="cc-btn cc-btn--danger cc-btn--sm cc-btn--icon-only" title="{% if u.is_active is not defined or u.is_active %}Disable{% else %}Enable{% endif %}"><i class="fas fa-ban"></i></button>
+            </form>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="9">
+          <div class="cc-empty-state">
+            <div class="cc-empty-state__icon"><i class="fas fa-user-graduate"></i></div>
+            <div class="cc-empty-state__title">No students found</div>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+const selected = new Set();
+const checkboxes = () => document.querySelectorAll('.user-check');
+
+function updateBulkBar() {
+  selected.clear();
+  checkboxes().forEach(cb => { if (cb.checked) selected.add(cb.value); });
+  const bar = document.getElementById('bulk-bar');
+  const count = document.getElementById('bulk-count');
+  if (selected.size > 0) {
+    bar.style.display = 'flex';
+    count.textContent = selected.size + ' student' + (selected.size > 1 ? 's' : '') + ' selected';
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+function toggleAll(master) {
+  checkboxes().forEach(cb => cb.checked = master.checked);
+  updateBulkBar();
+}
+
+function clearSelection() {
+  checkboxes().forEach(cb => cb.checked = false);
+  document.getElementById('select-all').checked = false;
+  updateBulkBar();
+}
+
+async function bulkAction(action) {
+  const ids = Array.from(selected);
+  if (ids.length === 0) return;
+
+  if (action === 'delete') {
+    if (!confirm('Delete ' + ids.length + ' selected student(s)? This cannot be undone.')) return;
+  }
+
+  try {
+    const resp = await fetch('{{ url_for("admin_bulk_users") }}', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids, action })
+    });
+    const data = await resp.json();
+    if (data.success) {
+      location.reload();
+    } else {
+      alert('Error: ' + (data.error || 'Unknown error'));
+    }
+  } catch (e) {
+    alert('Request failed.');
+  }
+}
+
+async function bulkExport() {
+  const ids = Array.from(selected);
+  if (ids.length === 0) return;
+
+  try {
+    const resp = await fetch('{{ url_for("admin_bulk_export_users") }}', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids })
+    });
+    if (!resp.ok) { alert('Export failed.'); return; }
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'selected_students.csv';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    alert('Export failed.');
+  }
+}
+</script>
+{% endblock %}

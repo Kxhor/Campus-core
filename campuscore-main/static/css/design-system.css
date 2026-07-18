@@ -1,0 +1,69 @@
+:root { /* Brand */ --cc-crimson: #8B1538; --cc-crimson-dark: #6B0F2A; --cc-crimson-light: #B91C4A; --cc-crimson-muted: rgba(139, 21, 56, 0.10); --cc-crimson-muted-2:rgba(139, 21, 56, 0.06);
+/* Accent */ --cc-gold: #C9A84C; --cc-gold-light: #F0D47F; --cc-gold-muted: rgba(201, 168, 76, 0.15);
+/* Surfaces */ --cc-bg: #F4F6F9; --cc-surface: #FFFFFF; --cc-surface-2: #F9FAFB; --cc-surface-3: #F3F4F6;
+/* Borders */ --cc-border: #E5E7EB; --cc-border-subtle: #F3F4F6; --cc-border-strong: #D1D5DB;
+/* Text */ --cc-text: #111827; --cc-text-secondary: #4B5563; --cc-text-muted: #9CA3AF; --cc-text-on-dark: #F9FAFB; --cc-text-on-brand: #FFFFFF;
+/* Sidebar */ --cc-sidebar-bg: #1C0B12; --cc-sidebar-hover: rgba(255, 255, 255, 0.06); --cc-sidebar-active-bg: rgba(201, 168, 76, 0.15); --cc-sidebar-active-bar: #C9A84C; --cc-sidebar-text: rgba(249, 250, 251, 0.65); --cc-sidebar-text-active:#F9FAFB; --cc-sidebar-border: rgba(255, 255, 255, 0.08); --cc-sidebar-width: 240px; --cc-sidebar-width-collapsed: 64px;
+/* Semantic */ --cc-success: #059669; --cc-success-bg: #ECFDF5; --cc-success-border: #A7F3D0; --cc-warning: #D97706; --cc-warning-bg: #FFFBEB; --cc-warning-border: #FDE68A; --cc-error: #DC2626; --cc-error-bg: #FEF2F2; --cc-error-border: #FECACA; --cc-info: #2563EB; --cc-info-bg: #EFF6FF; --cc-info-border: #BFDBFE;
+/* Typography */ --font-display: 'Playfair Display', Georgia, serif; --font-body: 'DM Sans', system-ui, -apple-system, sans-serif;
+--text-xs: 0.75rem; /* 12px */ --text-sm: 0.8125rem; /* 13px */ --text-base: 0.875rem; /* 14px */ --text-md: 1rem; /* 16px */ --text-lg: 1.125rem; /* 18px */ --text-xl: 1.375rem; /* 22px */ --text-2xl: 1.5rem; /* 24px */ --text-3xl: clamp(1.5rem, 3vw, 2rem);
+--weight-regular: 400; --weight-medium: 500; --weight-semibold:600; --weight-bold: 700;
+--leading-tight: 1.25; --leading-snug: 1.375; --leading-normal: 1.5; --leading-relaxed:1.625;
+/* Spacing */ --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem; --space-4: 1rem; --space-5: 1.25rem; --space-6: 1.5rem; --space-8: 2rem; --space-10: 2.5rem; --space-12: 3rem; --space-16: 4rem;
+/* Shadows */ --shadow-xs: 0 1px 2px rgba(0,0,0,0.05); --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04); --shadow-md: 0 4px 8px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04); --shadow-lg: 0 10px 20px rgba(0,0,0,0.08), 0 4px 8px rgba(0,0,0,0.04); --shadow-xl: 0 20px 40px rgba(0,0,0,0.10); --shadow-brand: 0 4px 14px rgba(139,21,56,0.30); --shadow-inner: inset 0 2px 4px rgba(0,0,0,0.06);
+/* Radius */ --radius-sm: 0.25rem; --radius-md: 0.5rem; --radius-lg: 0.75rem; --radius-xl: 1rem; --radius-2xl: 1.5rem; --radius-full:9999px;
+/* Transitions */ --transition-fast: 120ms ease; --transition-base: 200ms ease; --transition-slow: 300ms ease; --transition-spring: 200ms cubic-bezier(0.34,1.56,0.64,1);
+/* Z-index */ --z-dropdown: 100; --z-sidebar: 200; --z-topbar: 300; --z-overlay: 350; --z-modal: 400; --z-toast: 500; --z-announcement: 600; }
+/* Dark mode */ [data-theme="dark"] { --cc-bg: #0F0A0C; --cc-surface: #1A0F12; --cc-surface-2: #231318; --cc-surface-3: #2C1A20; --cc-border: rgba(255,255,255,0.10); --cc-border-subtle: rgba(255,255,255,0.06); --cc-border-strong: rgba(255,255,255,0.16); --cc-text: #F3F4F6; --cc-text-secondary: #D1D5DB; --cc-text-muted: #6B7280; }
+/* Reset to design system defaults */ *, *::before, *::after { box-sizing: border-box; }
+body { font-family: var(--font-body); font-size: var(--text-base); color: var(--cc-text); background-color: var(--cc-bg); line-height: var(--leading-normal); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+h1, h2, h3, h4, h5, h6 { font-family: var(--font-body); font-weight: var(--weight-semibold); line-height: var(--leading-tight); color: var(--cc-text); margin: 0; }
+/* Playfair Display usage — only for page hero titles */ .text-display { font-family: var(--font-display); font-weight: var(--weight-bold); font-size: var(--text-3xl); letter-spacing: -0.02em; line-height: var(--leading-tight); }
+/* Utility overrides for Bootstrap conflicts */ .btn { font-family: var(--font-body); } .form-control { font-family: var(--font-body); } a { color: var(--cc-crimson); text-decoration: none; } a:hover { color: var(--cc-crimson-dark); }
+
+/* =========================================
+   PHASE 13 — ACCESSIBILITY & POLISH
+   ========================================= */
+
+/* Skip to main content link */
+.cc-skip-link {
+  position: absolute;
+  top: -100%;
+  left: var(--space-4);
+  z-index: 9999;
+  padding: var(--space-2) var(--space-4);
+  background: var(--cc-crimson);
+  color: white;
+  border-radius: var(--radius-md);
+  font-weight: var(--weight-medium);
+  font-size: var(--text-sm);
+  text-decoration: none;
+  transition: top var(--transition-fast);
+}
+.cc-skip-link:focus { top: var(--space-4); }
+
+/* Visible focus ring on all interactive elements */
+:focus-visible {
+  outline: 2px solid var(--cc-crimson);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .cc-event-card:hover { transform: none; }
+  .cc-stat-card:hover { transform: none; }
+  .cc-card--hoverable:hover { transform: none; }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .cc-badge { border: 1px solid currentColor; }
+  .cc-nav-item.active { outline: 2px solid white; }
+}

@@ -1,0 +1,559 @@
+{% extends "base.html" %}
+
+{% block title %}Create Account — CampusCore{% endblock %}
+
+{% block head %}
+<style>
+/* Login/Register page local styles */
+.login-page { 
+  min-height: 100vh; 
+  display: grid; 
+  grid-template-columns: 1fr 1fr; 
+} 
+
+.login-left { 
+  background: var(--cc-sidebar-bg); 
+  display: flex; 
+  flex-direction: column; 
+  justify-content: space-between; 
+  padding: var(--space-12) var(--space-12); 
+  position: relative; 
+  overflow: hidden; 
+} 
+
+.login-left::before { 
+  content: ''; 
+  position: absolute; 
+  inset: 0; 
+  background-image: radial-gradient( ellipse at 30% 60%, rgba(139,21,56,0.3) 0%, transparent 60% ); 
+  pointer-events: none; 
+} 
+
+.login-left__logo { 
+  display: flex; 
+  align-items: center; 
+  gap: var(--space-3); 
+  position: relative; 
+  z-index: 1; 
+} 
+
+.login-left__logo-mark { 
+  width: 42px; 
+  height: 42px; 
+  background: var(--cc-crimson); 
+  border-radius: var(--radius-lg); 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+} 
+
+.login-left__logo-mark i { 
+  color: white; 
+  font-size: 18px; 
+} 
+
+.login-left__logo-name { 
+  font-size: var(--text-lg); 
+  font-weight: var(--weight-semibold); 
+  color: var(--cc-text-on-dark); 
+} 
+
+.login-left__hero { 
+  position: relative; 
+  z-index: 1; 
+} 
+
+.login-left__eyebrow { 
+  font-size: var(--text-xs); 
+  font-weight: var(--weight-semibold); 
+  letter-spacing: 0.1em; 
+  text-transform: uppercase; 
+  color: var(--cc-gold); 
+  margin-bottom: var(--space-4); 
+} 
+
+.login-left__heading { 
+  font-family: var(--font-display); 
+  font-size: clamp(2rem, 3vw, 2.75rem); 
+  font-weight: 700; 
+  color: var(--cc-text-on-dark); 
+  line-height: 1.15; 
+  letter-spacing: -0.02em; 
+  margin-bottom: var(--space-5); 
+} 
+
+.login-left__desc { 
+  font-size: var(--text-base); 
+  color: rgba(249,250,251,0.6); 
+  line-height: var(--leading-relaxed); 
+  max-width: 340px; 
+} 
+
+.login-left__features { 
+  display: flex; 
+  flex-direction: column; 
+  gap: var(--space-3); 
+  margin-top: var(--space-8); 
+} 
+
+.login-left__feature { 
+  display: flex; 
+  align-items: center; 
+  gap: var(--space-3); 
+  font-size: var(--text-sm); 
+  color: rgba(249,250,251,0.65); 
+} 
+
+.login-left__feature-dot { 
+  width: 28px; 
+  height: 28px; 
+  border-radius: var(--radius-md); 
+  background: rgba(201,168,76,0.15); 
+  border: 1px solid rgba(201,168,76,0.3); 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  flex-shrink: 0; 
+} 
+
+.login-left__feature-dot i { 
+  color: var(--cc-gold); 
+  font-size: 12px; 
+} 
+
+.login-left__footer-text { 
+  font-size: var(--text-xs); 
+  color: rgba(249,250,251,0.35); 
+  position: relative; 
+  z-index: 1; 
+} 
+
+.login-right { 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  padding: var(--space-10) var(--space-12); 
+  background: var(--cc-bg); 
+} 
+
+.login-form-container { 
+  width: 100%; 
+  max-width: 460px; 
+} 
+
+.login-form-container__title { 
+  font-size: var(--text-2xl); 
+  font-weight: var(--weight-bold); 
+  color: var(--cc-text); 
+  margin-bottom: var(--space-2); 
+} 
+
+.login-form-container__subtitle { 
+  font-size: var(--text-sm); 
+  color: var(--cc-text-muted); 
+  margin-bottom: var(--space-8); 
+} 
+
+.login-error { 
+  display: flex; 
+  align-items: center; 
+  gap: var(--space-3); 
+  padding: var(--space-3) var(--space-4); 
+  background: var(--cc-error-bg); 
+  border: 1px solid var(--cc-error-border); 
+  border-radius: var(--radius-lg); 
+  font-size: var(--text-sm); 
+  font-weight: var(--weight-medium); 
+  color: var(--cc-error); 
+  margin-bottom: var(--space-5); 
+  min-height: 48px; 
+  opacity: 0; 
+  transform: translateY(-4px); 
+  transition: opacity var(--transition-base), transform var(--transition-base); 
+} 
+
+.login-error.visible { 
+  opacity: 1; 
+  transform: translateY(0); 
+} 
+
+.login-form { 
+  display: flex; 
+  flex-direction: column; 
+  gap: var(--space-5); 
+} 
+
+.cc-btn--login { 
+  width: 100%; 
+  padding: var(--space-3) var(--space-4); 
+  justify-content: center; 
+  font-size: var(--text-base); 
+  font-weight: var(--weight-semibold); 
+} 
+
+.password-wrapper { 
+  position: relative; 
+} 
+
+.password-toggle { 
+  position: absolute; 
+  right: var(--space-3); 
+  top: 50%; 
+  transform: translateY(-50%); 
+  background: none; 
+  border: none; 
+  cursor: pointer; 
+  color: var(--cc-text-muted); 
+} 
+
+.form-group-label {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--cc-text);
+  margin-bottom: var(--space-3);
+  border-bottom: 1px solid var(--cc-border);
+  padding-bottom: var(--space-2);
+}
+
+.password-strength {
+  display: flex;
+  gap: 5%;
+  margin-top: var(--space-2);
+  height: 4px;
+}
+.password-strength-segment {
+  width: 30%;
+  border-radius: 2px;
+  background: var(--cc-border-strong);
+  transition: background 0.3s ease;
+}
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+.field-error {
+  display: none;
+  color: var(--cc-error);
+  font-size: var(--text-xs);
+  margin-top: var(--space-1);
+}
+.cc-form-group.has-error .cc-input,
+.cc-form-group.has-error .cc-select {
+  border-color: var(--cc-error);
+}
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+@media (max-width: 768px) { 
+  .login-page { grid-template-columns: 1fr; } 
+  .login-left { display: none; } 
+  .login-right { padding: var(--space-8) var(--space-5); min-height: 100vh; } 
+  .form-row { grid-template-columns: 1fr; }
+}
+</style>
+{% endblock %}
+
+{% block auth_content %}
+<div class="login-page">
+  <!-- Left panel — brand/identity -->
+  <div class="login-left">
+    <div class="login-left__logo">
+      <div class="login-left__logo-mark">
+        <i class="fas fa-graduation-cap"></i>
+      </div>
+      <span class="login-left__logo-name">CampusCore</span>
+    </div>
+
+    <div class="login-left__hero">
+      <p class="login-left__eyebrow">Sathyabama Institute of Science and Technology</p>
+      <h1 class="login-left__heading">Join the community.</h1>
+      <p class="login-left__desc">
+        Register for events, track your attendance, earn certificates, and stay connected 
+        with everything happening on campus.
+      </p>
+      <div class="login-left__features">
+        <div class="login-left__feature">
+          <div class="login-left__feature-dot"><i class="fas fa-qrcode"></i></div>
+          QR-based attendance verified automatically
+        </div>
+        <div class="login-left__feature">
+          <div class="login-left__feature-dot"><i class="fas fa-certificate"></i></div>
+          Certificates for every event you attend
+        </div>
+        <div class="login-left__feature">
+          <div class="login-left__feature-dot"><i class="fas fa-bell"></i></div>
+          Live announcements from organisers and admins
+        </div>
+      </div>
+    </div>
+
+    <p class="login-left__footer-text">
+      © {{ now.year if now else '2026' }} Sathyabama Institute of Science and Technology
+    </p>
+  </div>
+
+  <!-- Right panel — form -->
+  <div class="login-right">
+    <div class="login-form-container">
+      <h2 class="login-form-container__title">Create your account</h2>
+      <p class="login-form-container__subtitle">Fill in your details to get started</p>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            {% if category in ('danger', 'error', 'warning') %}
+              <div class="login-error visible" role="alert">
+                <i class="fas fa-exclamation-circle"></i>
+                {{ message }}
+              </div>
+            {% elif category in ('success', 'info') %}
+              <div class="login-error visible" style="background:var(--cc-success-bg);color:var(--cc-success);border-color:var(--cc-success-border);" role="alert">
+                <i class="fas fa-check-circle"></i>
+                {{ message }}
+              </div>
+            {% endif %}
+          {% endfor %}
+        {% else %}
+          <div class="login-error" role="alert"></div>
+        {% endif %}
+      {% endwith %}
+
+      <form method="POST" action="{{ url_for('register') }}" class="login-form" id="registerForm" onsubmit="return validateRegisterForm()" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="form-section">
+          <h3 class="form-group-label">Personal Information</h3>
+          
+          <div class="cc-form-group">
+            <label class="cc-label" for="reg_name">Full Name</label>
+            <input type="text" name="name" id="reg_name" class="cc-input" placeholder="Your Name" required>
+            <div class="field-error" id="name_error">Please enter your full name</div>
+          </div>
+
+          <div class="form-row">
+            <div class="cc-form-group">
+              <label class="cc-label" for="reg_number">Register Number</label>
+              <input type="text" name="reg_number" class="cc-input" placeholder="Enter your register number">
+          </div>
+          <div>
+            <label class="cc-label">Phone Number</label>
+            <input type="text" name="phone" class="cc-input" placeholder="Enter your phone number">
+          </div> id="reg_number" class="cc-input" placeholder="Your Register Number" required>
+              <div class="field-error" id="reg_error">Please enter your register number</div>
+            </div>
+            <div class="cc-form-group">
+              <label class="cc-label" for="reg_email">Email</label>
+              <input type="email" name="email" id="reg_email" class="cc-input" placeholder="Your Email" required>
+              <div class="field-error" id="email_error">Please enter a valid email address</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3 class="form-group-label">Academic Details</h3>
+          
+          <div class="form-row">
+            <div class="cc-form-group">
+              <label class="cc-label" for="department">Department</label>
+              <select name="department" id="department" class="cc-input cc-select" required>
+                <option value="">Select Department</option>
+                <option>Computer Science Engineering</option>
+                <option>Electronics &amp; Communication Engineering</option>
+                <option>Mechanical Engineering</option>
+                <option>Civil Engineering</option>
+                <option>Information Technology</option>
+                <option>Biotechnology</option>
+                <option>Aerospace Engineering</option>
+              </select>
+              <div class="field-error" id="dept_error">Please select your department</div>
+            </div>
+            
+            <div class="cc-form-group">
+              <label class="cc-label" for="year_of_study">Year of Study</label>
+              <select name="year_of_study" id="year_of_study" class="cc-input cc-select" required>
+                <option value="">Select</option>
+                <option value="1">1st Year</option>
+                <option value="2">2nd Year</option>
+                <option value="3">3rd Year</option>
+                <option value="4">4th Year</option>
+              </select>
+              <div class="field-error" id="year_error">Please select your year of study</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3 class="form-group-label">Security</h3>
+          
+          <div class="form-row">
+            <div class="cc-form-group">
+              <label class="cc-label" for="reg_password">Password</label>
+              <div class="password-wrapper">
+                <input type="password" name="password" id="reg_password" class="cc-input" placeholder="Create a strong password" required>
+                <button type="button" class="password-toggle" onclick="togglePassword('reg_password', 'pw-icon-1')" aria-label="Toggle password visibility">
+                  <i class="fas fa-eye" id="pw-icon-1"></i>
+                </button>
+              </div>
+              <div class="password-strength" id="pwStrength">
+                <div class="password-strength-segment" id="pwSeg1"></div>
+                <div class="password-strength-segment" id="pwSeg2"></div>
+                <div class="password-strength-segment" id="pwSeg3"></div>
+              </div>
+              <div class="field-error" id="pw_error">Password must be at least 8 characters</div>
+            </div>
+
+            <div class="cc-form-group">
+              <label class="cc-label" for="reg_confirm">Confirm Password</label>
+              <div class="password-wrapper">
+                <input type="password" id="reg_confirm" class="cc-input" placeholder="Re-enter password" required>
+                <button type="button" class="password-toggle" onclick="togglePassword('reg_confirm', 'pw-icon-2')" aria-label="Toggle password visibility">
+                  <i class="fas fa-eye" id="pw-icon-2"></i>
+                </button>
+              </div>
+              <div class="field-error" id="confirm_error">Passwords do not match</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="cc-form-group">
+          <label class="cc-checkbox-label">
+            <input type="checkbox" id="termsCheck" class="cc-checkbox" required>
+            I agree to the <a href="#" style="color:var(--cc-crimson); margin-left:4px;">Terms of Service</a>
+          </label>
+          <div class="field-error" id="terms_error">You must agree to the terms</div>
+        </div>
+
+        <button type="submit" class="cc-btn cc-btn--primary cc-btn--login">
+          Create Account <i class="fas fa-arrow-right" style="font-size:13px"></i>
+        </button>
+      </form>
+
+      <p class="login-form__register" style="text-align:center; margin-top:var(--space-6); font-size:var(--text-sm); color:var(--cc-text-muted);">
+        Already have an account? 
+        <a href="{{ url_for('login') }}" style="color:var(--cc-crimson); font-weight:500;">Sign In</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+function togglePassword(inputId, iconId) {
+  const passwordInput = document.getElementById(inputId);
+  const icon = document.getElementById(iconId);
+  if (passwordInput.type === 'password') {
+    passwordInput.type = 'text';
+    icon.classList.remove('fa-eye');
+    icon.classList.add('fa-eye-slash');
+  } else {
+    passwordInput.type = 'password';
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
+  }
+}
+
+document.getElementById('reg_password').addEventListener('input', function() {
+  const val = this.value;
+  const seg1 = document.getElementById('pwSeg1');
+  const seg2 = document.getElementById('pwSeg2');
+  const seg3 = document.getElementById('pwSeg3');
+  
+  // Reset
+  seg1.style.background = 'var(--cc-border-strong)';
+  seg2.style.background = 'var(--cc-border-strong)';
+  seg3.style.background = 'var(--cc-border-strong)';
+  
+  if (!val) return;
+  
+  let hasLength = val.length >= 8;
+  let hasNumber = /\d/.test(val);
+  let hasSpecial = /[^a-zA-Z0-9]/.test(val);
+  
+  if (!hasLength) {
+    // Red = length < 8
+    seg1.style.background = 'var(--cc-error)';
+  } else if (hasLength && !hasNumber && !hasSpecial) {
+    // Amber = length >= 8
+    seg1.style.background = 'var(--cc-warning)';
+    seg2.style.background = 'var(--cc-warning)';
+  } else if (hasLength && (hasNumber || hasSpecial)) {
+    if (hasNumber && hasSpecial) {
+      seg1.style.background = 'var(--cc-success)';
+      seg2.style.background = 'var(--cc-success)';
+      seg3.style.background = 'var(--cc-success)';
+    } else {
+      seg1.style.background = 'var(--cc-warning)';
+      seg2.style.background = 'var(--cc-warning)';
+    }
+  }
+});
+
+function validateRegisterForm() {
+  let valid = true;
+  const name = document.getElementById('reg_name');
+  const email = document.getElementById('reg_email');
+  const regNumber = document.getElementById('reg_number');
+  const dept = document.getElementById('department');
+  const year = document.getElementById('year_of_study');
+  const pw = document.getElementById('reg_password');
+  const confirm = document.getElementById('reg_confirm');
+  const terms = document.getElementById('termsCheck');
+
+  document.querySelectorAll('.cc-form-group.has-error').forEach(function(e) { e.classList.remove('has-error'); });
+  document.querySelectorAll('.field-error').forEach(function(e) { e.style.display = 'none'; });
+
+  if (!name.value.trim()) {
+    document.getElementById('name_error').style.display = 'block';
+    name.closest('.cc-form-group').classList.add('has-error');
+    valid = false;
+  }
+  
+  if (!regNumber.value.trim()) {
+    document.getElementById('reg_error').style.display = 'block';
+    regNumber.closest('.cc-form-group').classList.add('has-error');
+    valid = false;
+  }
+
+  if (!email.value.trim() || !email.value.includes('@')) {
+    document.getElementById('email_error').style.display = 'block';
+    email.closest('.cc-form-group').classList.add('has-error');
+    valid = false;
+  }
+  
+  if (!dept.value) {
+    document.getElementById('dept_error').style.display = 'block';
+    dept.closest('.cc-form-group').classList.add('has-error');
+    valid = false;
+  }
+  
+  if (!year.value) {
+    document.getElementById('year_error').style.display = 'block';
+    year.closest('.cc-form-group').classList.add('has-error');
+    valid = false;
+  }
+
+  if (pw.value.length < 8) {
+    document.getElementById('pw_error').style.display = 'block';
+    pw.closest('.cc-form-group').classList.add('has-error');
+    valid = false;
+  }
+
+  if (pw.value !== confirm.value) {
+    document.getElementById('confirm_error').style.display = 'block';
+    pw.closest('.cc-form-group').classList.add('has-error');
+    confirm.closest('.cc-form-group').classList.add('has-error');
+    valid = false;
+  }
+
+  if (!terms.checked) {
+    document.getElementById('terms_error').style.display = 'block';
+    valid = false;
+  }
+
+  return valid;
+}
+</script>
+{% endblock %}

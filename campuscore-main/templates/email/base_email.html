@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+</head>
+<body style="margin:0; padding:0; background:#F4F6F9;">
+<table width="100%" cellpadding="0" cellspacing="0" 
+       style="background:#F4F6F9; min-height:100vh;">
+  <tr>
+    <td align="center" style="padding:40px 16px;">
+      <table width="600" cellpadding="0" cellspacing="0"
+             style="max-width:600px; background:#FFFFFF; 
+                    border-radius:8px; overflow:hidden;">
+        
+        <!-- Header -->
+        <tr>
+          <td style="background:#8B1538; padding:20px 32px;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td>
+                  <table cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="background:#FFFFFF; border-radius:6px; 
+                                 padding:4px 8px; vertical-align:middle;">
+                        <span style="font-size:16px;">🎓</span>
+                      </td>
+                      <td style="padding-left:8px; vertical-align:middle;">
+                        <span style="color:#FFFFFF; font-size:16px; 
+                                     font-weight:600; font-family:Arial,sans-serif;">
+                          CampusCore
+                        </span>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+                <td align="right">
+                  <span style="color:rgba(255,255,255,0.7); font-size:11px;
+                               font-family:Arial,sans-serif;">
+                    SIST Portal
+                  </span>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Body block (child templates fill this) -->
+        <tr>
+          <td style="padding:32px;">
+            {% block content %}{% endblock %}
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="background:#F4F6F9; padding:20px 32px;
+                     border-top:1px solid #E5E7EB;">
+            <p style="color:#9CA3AF; font-size:11px; margin:0; 
+                      text-align:center; font-family:Arial,sans-serif;
+                      line-height:1.6;">
+              This email was sent by CampusCore —<br>
+              Sathyabama Institute of Science and Technology<br>
+              &copy; {{ year if year else '2026' }}
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Flask / App specific
+instance/
+*.db
+*.sqlite
+*.sqlite3
+campuscore.db
+
+# Environment variables - NEVER commit these
+.env
+.env.local
+.env.production
+
+# Uploads
+static/uploads/
+uploads/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Scratch / Dev scripts
+scratch/
+
+# Node (email microservice)
+node_modules/
+npm-debug.log*
+
+# Certificates
+*.pem
+*.key
+*.crt

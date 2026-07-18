@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+{% block title %}Attendance Records{% endblock %}
+{% block page_title %}<i class="fas fa-clipboard-list"></i> Attendance Records{% endblock %}
+
+{% block content %}
+<div class="cc-page-header">
+  <div style="display:flex; justify-content:space-between; align-items:flex-start; width:100%;">
+    <div>
+      <h1 class="cc-page-title">Attendance Records</h1>
+      <p class="cc-page-subtitle">Cross-event attendance log</p>
+    </div>
+    <div>
+      {% if session.get('role') == 'admin' %}
+      <a href="#" class="cc-btn cc-btn--secondary"><i class="fas fa-download"></i> Export CSV</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="cc-card" style="margin-bottom: var(--space-6);">
+  <div class="cc-card__body" style="padding:var(--space-3) var(--space-4);">
+    <form method="GET" style="display:flex; gap:var(--space-3); align-items:center; flex-wrap:wrap;">
+      <select name="event_id" class="cc-select" style="flex:1; min-width:200px;">
+        <option value="">All Events</option>
+      </select>
+      
+      <input type="date" name="date_from" class="cc-input" value="{{ request.args.get('date_from', '') }}">
+      <input type="date" name="date_to" class="cc-input" value="{{ request.args.get('date_to', '') }}">
+      
+      <select name="status" class="cc-select">
+        <option value="">All</option>
+        <option value="present" {% if request.args.get('status') == 'present' %}selected{% endif %}>Present</option>
+        <option value="absent" {% if request.args.get('status') == 'absent' %}selected{% endif %}>Absent</option>
+      </select>
+      
+      <button type="submit" class="cc-btn cc-btn--secondary">Filter</button>
+    </form>
+  </div>
+</div>
+
+{% set present_count = 0 %}
+{% set absent_count = 0 %}
+{% if registrations %}
+  {% for reg, student in registrations %}
+    {% if attendance_map.get(student.id) == 'present' %}
+      {% set present_count = present_count + 1 %}
+    {% else %}
+      {% set absent_count = absent_count + 1 %}
+    {% endif %}
+  {% endfor %}
+{% endif %}
+
+<div class="cc-grid cc-grid--3" style="margin-bottom: var(--space-6);">
+  <div class="cc-stat-card cc-stat-card--events">
+    <div class="cc-stat-card__icon"><i class="fas fa-list-ol"></i></div>
+    <div class="cc-stat-card__content">
+      <div class="cc-stat-card__label">Total Records</div>
+      <div class="cc-stat-card__value">{{ registrations|length if registrations else 0 }}</div>
+    </div>
+  </div>
+  
+  <div class="cc-stat-card cc-stat-card--certs">
+    <div class="cc-stat-card__icon"><i class="fas fa-user-check"></i></div>
+    <div class="cc-stat-card__content">
+      <div class="cc-stat-card__label">Present</div>
+      <div class="cc-stat-card__value">{{ present_count }}</div>
+    </div>
+  </div>
+  
+  <div class="cc-stat-card cc-stat-card--users">
+    <div class="cc-stat-card__icon"><i class="fas fa-user-times"></i></div>
+    <div class="cc-stat-card__content">
+      <div class="cc-stat-card__label">Absent</div>
+      <div class="cc-stat-card__value">
+        {{ absent_count }}
+        {% set total = registrations|length %}
+        <span style="font-size:var(--text-sm); font-weight:normal; color:var(--cc-text-muted);">
+          ({{ ((absent_count / total * 100)|round(1)) if total > 0 else 0 }}%)
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="cc-card" style="width: 100%;">
+  <div class="cc-table-wrapper">
+    <table class="cc-table">
+      <thead>
+        <tr>
+          <th>Student</th>
+          <th>Register No.</th>
+          <th>Event</th>
+          <th>Date</th>
+          <th>Status</th>
+          <th>Method</th>
+          <th>Checked In By</th>
+          <th>Time</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if registrations %}
+          {% for reg, student in registrations %}
+          <tr>
+            <td>
+              <div style="display:flex; align-items:center; gap:var(--space-3);">
+                <div class="cc-user-avatar" style="width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:50%; color:white; font-weight:bold; background:var(--cc-info);">
+                  {{ student.name[0] if student else '?' }}
+                </div>
+                <div>
+                  <div style="font-weight:var(--weight-semibold); color:var(--cc-text);">{{ student.name if student else 'Unknown' }}</div>
+                  <div style="font-size:var(--text-xs); color:var(--cc-text-muted);">{{ student.email if student else '' }}</div>
+                </div>
+              </div>
+            </td>
+            <td>{{ student.reg_number or '—' }}</td>
+            <td>{{ event.title if event else '—' }}</td>
+            <td>{{ event.date.strftime('%d %b %Y') if event and event.date else '—' }}</td>
+            <td>
+              {% if attendance_map.get(student.id) == 'present' %}
+                <input type="radio" name="attendance_{{ student.id }}" value="present" {% if attendance_map.get(student.id) == 'present' %}checked{% endif %}> Present
+              {% else %}
+                <input type="radio" name="attendance_{{ student.id }}" value="absent" {% if attendance_map.get(student.id) != 'present' %}checked{% endif %}> Absent
+              {% endif %}
+            </td>
+            <td>
+              <span class="cc-badge cc-badge--info" style="font-size:0.7rem; padding:0.2rem 0.5rem;">Manual</span>
+            </td>
+            <td style="font-size:var(--text-sm); color:var(--cc-text-secondary);">Admin</td>
+            <td style="font-family:monospace; font-size:var(--text-xs); color:var(--cc-text-muted);">
+              —
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="8">
+              <div class="cc-empty-state">
+                <div class="cc-empty-state__icon"><i class="fas fa-clipboard-list"></i></div>
+                <div class="cc-empty-state__title">No attendance records found</div>
+              </div>
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+function filterAttendance() {
+  var term = document.getElementById('attSearch').value.toLowerCase();
+  var rows = document.querySelectorAll('#attendanceForm tbody tr');
+  rows.forEach(function(row) {
+    var name = row.getAttribute('data-name') || '';
+    var email = row.getAttribute('data-email') || '';
+    var reg = row.getAttribute('data-reg') || '';
+    var match = name.indexOf(term) > -1 || email.indexOf(term) > -1 || reg.indexOf(term) > -1;
+    row.style.display = match ? '' : 'none';
+  });
+}
+
+function markAll(status) {
+  document.querySelectorAll('#attendanceForm tbody tr:not([style*="none"]) input[value="' + status + '"]').forEach(function(r) {
+    r.checked = true;
+    var id = r.name.split('_')[1];
+    updateRow(id, status);
+  });
+}
+
+function updateRow(id, status) {
+  var row = document.getElementById('row-' + id);
+  row.classList.toggle('row-present', status === 'present');
+  row.classList.toggle('row-absent', status === 'absent');
+  updateCount();
+}
+
+function updateCount() {
+  var present = document.querySelectorAll('input[value="present"]:checked').length;
+  var absent = document.querySelectorAll('input[value="absent"]:checked').length;
+  document.getElementById('presentCount').textContent = present;
+  document.getElementById('absentCount').textContent = absent;
+}
+
+document.addEventListener('DOMContentLoaded', updateCount);
+
+var qrScannerInstance = null;
+
+function openQRScanner() {
+  var modal = document.getElementById('qrScannerModal');
+  modal.style.display = 'flex';
+  document.getElementById('qrResult').innerHTML = '';
+
+  var readerEl = document.getElementById('qrReader');
+  readerEl.innerHTML = '';
+
+  if (typeof Html5Qrcode !== 'undefined') {
+    qrScannerInstance = new Html5Qrcode("qrReader");
+    qrScannerInstance.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: { width: 250, height: 250 } },
+      function(qrMessage) {
+        handleQRScan(qrMessage);
+      },
+      function(error) { /* ignore */ }
+    ).catch(function(err) {
+      document.getElementById('qrResult').innerHTML = '<span style="color:var(--red);">Camera access denied or unavailable.</span>';
+    });
+  } else {
+    document.getElementById('qrResult').innerHTML = '<span style="color:var(--red);">QR scanner library not loaded. Try refreshing.</span>';
+  }
+}
+
+function closeQRScanner() {
+  if (qrScannerInstance) {
+    qrScannerInstance.stop().then(function() {
+      qrScannerInstance.clear();
+      qrScannerInstance = null;
+    }).catch(function() {});
+  }
+  document.getElementById('qrScannerModal').style.display = 'none';
+}
+
+function handleQRScan(payload) {
+  if (qrScannerInstance) {
+    qrScannerInstance.pause();
+  }
+  var resultEl = document.getElementById('qrResult');
+  resultEl.innerHTML = '<span style="color:var(--brass);"><i class="fas fa-spinner fa-spin"></i> Verifying...</span>';
+
+  fetch('/organizer/checkin/scan', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ qr_payload: payload })
+  })
+  .then(function(res) { return res.json(); })
+  .then(function(data) {
+    if (data.status === 'checked_in') {
+      resultEl.innerHTML = '<span style="color:green;font-weight:600;"><i class="fas fa-check-circle"></i> Checked in: ' + data.name + '</span>';
+      setTimeout(closeQRScanner, 1500);
+      location.reload();
+    } else if (data.error === 'already_checked_in') {
+      resultEl.innerHTML = '<span style="color:orange;"><i class="fas fa-exclamation-triangle"></i> Already checked in at ' + data.at + '</span>';
+      if (qrScannerInstance) qrScannerInstance.resume();
+    } else {
+      resultEl.innerHTML = '<span style="color:var(--red);"><i class="fas fa-times-circle"></i> ' + (data.error || 'Invalid QR') + '</span>';
+      if (qrScannerInstance) qrScannerInstance.resume();
+    }
+  })
+  .catch(function() {
+    resultEl.innerHTML = '<span style="color:var(--red);">Network error</span>';
+    if (qrScannerInstance) qrScannerInstance.resume();
+  });
+}
+</script>
+{% endblock %}

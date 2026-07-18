@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}Audit Log{% endblock %}
+{% block page_title %}<i class="fas fa-shield-alt"></i> Audit Log{% endblock %}
+
+{% block content %}
+<style>
+  tr[data-action="DELETE"]:hover, tr[data-action="delete"]:hover {
+    background: var(--cc-error-bg) !important;
+  }
+</style>
+
+<div class="cc-page-header">
+  <div style="display:flex; justify-content:space-between; align-items:flex-start; width:100%;">
+    <div>
+      <h1 class="cc-page-title">Audit Log</h1>
+      <p class="cc-page-subtitle">Security and administrative action history</p>
+    </div>
+    <div>
+      <a href="#" class="cc-btn cc-btn--secondary"><i class="fas fa-download"></i> Export CSV</a>
+    </div>
+  </div>
+</div>
+
+<div class="cc-card" style="margin-bottom: var(--space-6);">
+  <div class="cc-card__body" style="padding:var(--space-3) var(--space-4);">
+    <form method="GET" style="display:flex; gap:var(--space-3); align-items:center; flex-wrap:wrap;">
+      <select name="action" class="cc-select" style="min-width:150px;">
+        <option value="">All Actions</option>
+        <option value="CREATE" {% if request.args.get('action') == 'CREATE' %}selected{% endif %}>CREATE</option>
+        <option value="UPDATE" {% if request.args.get('action') == 'UPDATE' %}selected{% endif %}>UPDATE</option>
+        <option value="DELETE" {% if request.args.get('action') == 'DELETE' %}selected{% endif %}>DELETE</option>
+        <option value="LOGIN" {% if request.args.get('action') == 'LOGIN' %}selected{% endif %}>LOGIN</option>
+        <option value="LOGOUT" {% if request.args.get('action') == 'LOGOUT' %}selected{% endif %}>LOGOUT</option>
+      </select>
+      
+      <div class="cc-search-wrapper" style="flex:1; min-width:200px;">
+        <i class="fas fa-search cc-search-icon"></i>
+        <input type="search" name="user" class="cc-input" placeholder="Search user..." value="{{ request.args.get('user', '') }}">
+      </div>
+      
+      <input type="date" name="date_from" class="cc-input" value="{{ request.args.get('date_from', '') }}">
+      <input type="date" name="date_to" class="cc-input" value="{{ request.args.get('date_to', '') }}">
+      
+      <button type="submit" class="cc-btn cc-btn--secondary">Filter</button>
+    </form>
+  </div>
+</div>
+
+<div class="cc-card" style="width: 100%;">
+  <div class="cc-table-wrapper">
+    <table class="cc-table">
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>Action</th>
+          <th>User</th>
+          <th>Target</th>
+          <th>Details</th>
+          <th>IP</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if logs %}
+          {% for log in logs %}
+          <tr data-action="{{ log.action }}">
+            <td style="font-family:monospace; font-size:var(--text-xs); color:var(--cc-text-muted); white-space:nowrap;">
+              {{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') if log.created_at else '—' }}
+            </td>
+            <td>
+              {% set act = (log.action or '')|upper %}
+              {% if act == 'CREATE' %}
+                <span class="cc-badge" style="background:var(--cc-success-bg); color:var(--cc-success);">{{ act }}</span>
+              {% elif act == 'UPDATE' %}
+                <span class="cc-badge" style="background:var(--cc-info-bg); color:var(--cc-info);">{{ act }}</span>
+              {% elif act == 'DELETE' %}
+                <span class="cc-badge" style="background:var(--cc-error-bg); color:var(--cc-error);">{{ act }}</span>
+              {% elif act == 'LOGIN' or act == 'LOGOUT' %}
+                <span class="cc-badge" style="background:var(--cc-surface-3); color:var(--cc-text-secondary);">{{ act }}</span>
+              {% else %}
+                <span class="cc-badge cc-badge--completed">{{ act }}</span>
+              {% endif %}
+            </td>
+            <td>
+              <div style="display:flex; flex-direction:column;">
+                <span style="font-weight:var(--weight-semibold); color:var(--cc-text);">
+                  {{ log.changed_by_user.name if log.changed_by_user else (log.user.name if log.user else 'System') }}
+                </span>
+                <span class="cc-badge" style="font-size:0.65rem; padding:0.1rem 0.3rem; margin-top:2px; width:max-content; background:var(--cc-surface-3);">
+                  {{ log.changed_by_user.role|title if log.changed_by_user else (log.user.role|title if log.user else 'System') }}
+                </span>
+              </div>
+            </td>
+            <td style="font-size:var(--text-sm); color:var(--cc-text-secondary);">
+              {% if log.changed_by_user %}
+                User ID: {{ log.user_id }} ({{ log.user.email if log.user else '' }})
+              {% else %}
+                —
+              {% endif %}
+            </td>
+            <td style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ log.changes }}">
+              {{ log.changes or '—' }}
+            </td>
+            <td style="font-family:monospace; font-size:var(--text-xs); color:var(--cc-text-muted);">
+              {{ log.ip_address or '—' }}
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="6">
+              <div class="cc-empty-state">
+                <div class="cc-empty-state__icon"><i class="fas fa-shield-alt"></i></div>
+                <div class="cc-empty-state__title">No audit records found</div>
+              </div>
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+  
+  {% if pagination and pagination.pages > 1 %}
+  <div class="cc-card__body" style="display:flex; justify-content:center; padding:var(--space-4); border-top:1px solid var(--cc-border-subtle);">
+    <div style="display:flex; gap:var(--space-2);">
+      {% if pagination.has_prev %}
+      <a href="{{ url_for('admin_audit_logs', page=pagination.prev_num, **request.args) }}" class="cc-btn cc-btn--secondary">Previous</a>
+      {% endif %}
+      
+      <span class="cc-btn cc-btn--secondary" style="pointer-events:none; background:var(--cc-surface-3);">Page {{ pagination.page }} of {{ pagination.pages }}</span>
+      
+      {% if pagination.has_next %}
+      <a href="{{ url_for('admin_audit_logs', page=pagination.next_num, **request.args) }}" class="cc-btn cc-btn--secondary">Next</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

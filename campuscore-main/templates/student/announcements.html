@@ -1,0 +1,237 @@
+{% extends 'base.html' %}
+{% block title %}Announcements — CampusCore{% endblock %}
+{% block page_title %}<i class="fas fa-bullhorn"></i> Announcements{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+.cc-ann-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--cc-border-subtle);
+  transition: background-color 0.2s ease;
+}
+
+.cc-ann-row:last-child {
+  border-bottom: none;
+}
+
+.cc-ann-row--unread {
+  background-color: var(--cc-crimson-muted-2);
+}
+
+.cc-ann-stripe {
+  width: 3px;
+  align-self: stretch;
+  border-radius: var(--radius-full);
+  min-height: 48px;
+  flex-shrink: 0;
+}
+.cc-ann-stripe--info { background-color: var(--cc-info); }
+.cc-ann-stripe--warning { background-color: var(--cc-warning); }
+.cc-ann-stripe--urgent { background-color: var(--cc-crimson); }
+
+.cc-ann-icon-circle {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.cc-ann-icon-circle i {
+  font-size: 14px;
+}
+.cc-ann-icon-circle--info { background-color: rgba(59, 130, 246, 0.1); color: var(--cc-info); }
+.cc-ann-icon-circle--warning { background-color: rgba(245, 158, 11, 0.1); color: var(--cc-warning); }
+.cc-ann-icon-circle--urgent { background-color: rgba(220, 38, 38, 0.1); color: var(--cc-crimson); }
+
+.cc-ann-message {
+  font-size: var(--text-sm);
+  color: var(--cc-text);
+  margin: 0;
+  line-height: 1.5;
+}
+.cc-ann-message--unread {
+  font-weight: 600;
+}
+.cc-ann-message--read {
+  font-weight: 400;
+}
+
+.cc-ann-footer {
+  font-size: var(--text-xs);
+  color: var(--cc-text-muted);
+  margin-top: var(--space-2);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Base custom badge colors if missing from components.css */
+.cc-badge--info { background: rgba(59, 130, 246, 0.1); color: var(--cc-info); border: 1px solid rgba(59, 130, 246, 0.2); }
+.cc-badge--warning { background: rgba(245, 158, 11, 0.1); color: var(--cc-warning); border: 1px solid rgba(245, 158, 11, 0.2); }
+.cc-badge--urgent { background: rgba(220, 38, 38, 0.1); color: var(--cc-crimson); border: 1px solid rgba(220, 38, 38, 0.2); }
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.ann-item-new { animation: slideDown 0.35s ease forwards; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cc-page-header">
+  <div>
+    <h1 class="cc-page-heading">Announcements</h1>
+    <p class="cc-page-sub">Platform-wide broadcasts from administrators</p>
+  </div>
+</div>
+
+{% set current_filter = request.args.get('filter', 'all') %}
+
+<!-- FILTER TABS -->
+<div class="cc-tab-group" style="margin-bottom: var(--space-6); display: flex; justify-content: space-between; align-items: center;">
+  <div style="display: flex;">
+    <a href="?filter=all" class="cc-tab {% if current_filter == 'all' %}active{% endif %}">All</a>
+    <a href="?filter=info" class="cc-tab {% if current_filter == 'info' %}active{% endif %}">Info</a>
+    <a href="?filter=warning" class="cc-tab {% if current_filter == 'warning' %}active{% endif %}">Warning</a>
+    <a href="?filter=urgent" class="cc-tab {% if current_filter == 'urgent' %}active{% endif %}">Urgent</a>
+  </div>
+  
+  {% set ns_unread = namespace(count=0) %}
+  {% for ann in announcements %}
+    {% if not ann.is_read %}
+      {% set ns_unread.count = ns_unread.count + 1 %}
+    {% endif %}
+  {% endfor %}
+  
+  {% if ns_unread.count > 0 %}
+    <span class="cc-badge cc-badge--pending" style="margin-left: auto;">
+      {{ ns_unread.count }} Unread
+    </span>
+  {% endif %}
+</div>
+
+{% set ns = namespace(count=0) %}
+
+{% for ann in announcements %}
+  {% if current_filter == 'all' or ann.priority == current_filter %}
+    {% set ns.count = ns.count + 1 %}
+  {% endif %}
+{% endfor %}
+
+<!-- ANNOUNCEMENTS CARD -->
+<div class="cc-card">
+  <div class="cc-card__header">
+    <h3>Broadcasts</h3>
+  </div>
+  <div class="cc-card__body" style="padding: 0;" id="annList">
+    
+    {% if ns.count > 0 %}
+      {% for ann in announcements %}
+        {% if current_filter == 'all' or ann.priority == current_filter %}
+          {% set unread_class = 'cc-ann-row--unread' if not ann.is_read else '' %}
+          {% set text_class = 'cc-ann-message--unread' if not ann.is_read else 'cc-ann-message--read' %}
+          
+          <div class="cc-ann-row {{ unread_class }}" data-priority="{{ ann.priority }}">
+            <!-- Left: Priority strip -->
+            <div class="cc-ann-stripe cc-ann-stripe--{{ ann.priority }}"></div>
+            
+            <!-- Center: Content -->
+            <div style="flex-grow: 1; min-width: 0;">
+              <div style="display: flex; align-items: flex-start; gap: var(--space-3); margin-bottom: var(--space-1);">
+                <div class="cc-ann-icon-circle cc-ann-icon-circle--{{ ann.priority }}">
+                  <i class="fas {{ {'info':'fa-info-circle', 'warning':'fa-exclamation-triangle', 'urgent':'fa-exclamation-circle'}[ann.priority] }}"></i>
+                </div>
+                <div style="flex-grow: 1; padding-top: 2px;">
+                  <p class="cc-ann-message {{ text_class }}">{{ ann.message }}</p>
+                  <div class="cc-ann-footer">
+                    Sent by {{ ann.author_name }} &middot; {{ ann.formatted_time() }}
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Right: Priority badge -->
+            <span class="cc-badge cc-badge--{{ ann.priority }}" style="align-self: flex-start;">
+              {{ ann.priority_label }}
+            </span>
+          </div>
+        {% endif %}
+      {% endfor %}
+    {% else %}
+      <div class="cc-empty-state">
+        <i class="fas fa-bullhorn cc-empty-state__icon"></i>
+        <h3 class="cc-empty-state__title">No announcements yet</h3>
+        <p class="cc-empty-state__desc">Check back soon for updates.</p>
+      </div>
+    {% endif %}
+    
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+(function () {
+  'use strict';
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  var stripeMap = { info:'cc-ann-stripe--info', warning:'cc-ann-stripe--warning', urgent:'cc-ann-stripe--urgent' };
+  var badgeMap  = { info:'cc-badge--info',  warning:'cc-badge--warning',  urgent:'cc-badge--urgent'  };
+  var iconCircleMap = { info:'cc-ann-icon-circle--info', warning:'cc-ann-icon-circle--warning', urgent:'cc-ann-icon-circle--urgent' };
+  var iconMap   = { info:'fa-info-circle', warning:'fa-exclamation-triangle', urgent:'fa-exclamation-circle' };
+
+  if (window._socket) {
+    window._socket.on('new_announcement', function (data) {
+      if (data.author_role === 'admin' || data.author_role === 'organizer') {
+        
+        // Respect filter logic
+        var urlParams = new URLSearchParams(window.location.search);
+        var currentFilter = urlParams.get('filter') || 'all';
+        if (currentFilter !== 'all' && currentFilter !== data.priority) {
+          return; // Skip rendering if it doesn't match active filter
+        }
+
+        var list = document.getElementById('annList');
+        var empty = list.querySelector('.cc-empty-state');
+        if (empty) empty.remove();
+
+        var item = document.createElement('div');
+        item.className = 'cc-ann-row cc-ann-row--unread ann-item-new';
+        item.dataset.priority = data.priority;
+        item.innerHTML =
+          '<div class="cc-ann-stripe ' + (stripeMap[data.priority] || 'cc-ann-stripe--info') + '"></div>' +
+          '<div style="flex-grow: 1; min-width: 0;">' +
+            '<div style="display: flex; align-items: flex-start; gap: var(--space-3); margin-bottom: var(--space-1);">' +
+              '<div class="cc-ann-icon-circle ' + (iconCircleMap[data.priority] || 'cc-ann-icon-circle--info') + '">' +
+                '<i class="fas ' + (iconMap[data.priority] || 'fa-info-circle') + '"></i>' +
+              '</div>' +
+              '<div style="flex-grow: 1; padding-top: 2px;">' +
+                '<p class="cc-ann-message cc-ann-message--unread">' + escHtml(data.message) + '</p>' +
+                '<div class="cc-ann-footer">' +
+                  'Sent by ' + escHtml(data.author) + ' &middot; ' + escHtml(data.time) +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          '<span class="cc-badge ' + (badgeMap[data.priority] || 'cc-badge--info') + '" style="align-self: flex-start;">' +
+            escHtml(data.priority_label) +
+          '</span>';
+          
+        list.insertBefore(item, list.firstChild);
+      }
+    });
+  }
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}Events{% endblock %}
+{% block page_title %}<i class="fas fa-calendar-alt"></i> Events{% endblock %}
+
+{% block content %}
+<!-- Page header -->
+<div class="cc-page-header" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:var(--space-4);">
+  <div>
+    <h1 class="cc-page-title">My Events</h1>
+    <p class="cc-page-subtitle">Manage and track your created events</p>
+  </div>
+  <a href="{{ url_for('organizer_create_event') }}" class="cc-btn cc-btn--primary">
+    <i class="fas fa-plus"></i> Create Event
+  </a>
+</div>
+
+<!-- STAT ROW -->
+<div class="cc-grid cc-grid--3" style="margin-bottom: var(--space-6);">
+  <div class="cc-stat-card cc-stat-card--events" style="padding: var(--space-4);">
+    <div class="cc-stat-card__icon"><i class="fas fa-calendar-check"></i></div>
+    <div class="cc-stat-card__content">
+      <div class="cc-stat-card__label">Total Events</div>
+      <div class="cc-stat-card__value">{{ total_events | default(events|length) }}</div>
+    </div>
+  </div>
+  <div class="cc-stat-card cc-stat-card--registered" style="padding: var(--space-4);">
+    <div class="cc-stat-card__icon"><i class="fas fa-users"></i></div>
+    <div class="cc-stat-card__content">
+      <div class="cc-stat-card__label">Total Registrations</div>
+      <div class="cc-stat-card__value">{{ total_registrations | default('0') }}</div>
+    </div>
+  </div>
+  <div class="cc-stat-card cc-stat-card--certs" style="padding: var(--space-4); --stat-color: var(--cc-warning);">
+    <div class="cc-stat-card__icon"><i class="fas fa-clock"></i></div>
+    <div class="cc-stat-card__content">
+      <div class="cc-stat-card__label">Pending Approval</div>
+      <div class="cc-stat-card__value">{{ pending_count | default('0') }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Tab group -->
+<div style="margin-bottom:var(--space-5);">
+  <div class="cc-tab-group">
+    <a href="?tab=all&search={{ search }}&category={{ selected_category }}" class="cc-tab {% if tab == 'all' or not tab %}active{% endif %}">All</a>
+    <a href="?tab=draft&search={{ search }}&category={{ selected_category }}" class="cc-tab {% if tab == 'draft' %}active{% endif %}">Draft</a>
+    <a href="?tab=pending&search={{ search }}&category={{ selected_category }}" class="cc-tab {% if tab == 'pending' %}active{% endif %}">Pending</a>
+    <a href="?tab=approved&search={{ search }}&category={{ selected_category }}" class="cc-tab {% if tab == 'approved' %}active{% endif %}">Approved</a>
+    <a href="?tab=active&search={{ search }}&category={{ selected_category }}" class="cc-tab {% if tab == 'active' %}active{% endif %}">Active</a>
+    <a href="?tab=completed&search={{ search }}&category={{ selected_category }}" class="cc-tab {% if tab == 'completed' %}active{% endif %}">Completed</a>
+    <a href="?tab=cancelled&search={{ search }}&category={{ selected_category }}" class="cc-tab {% if tab == 'cancelled' %}active{% endif %}">Cancelled</a>
+  </div>
+</div>
+
+<!-- Search/filter bar -->
+<div class="cc-card" style="margin-bottom:var(--space-5);">
+  <div class="cc-card__body" style="padding:var(--space-3) var(--space-4);">
+    <form method="GET" class="filter-form" style="display:flex; gap:var(--space-3); align-items:center; flex-wrap:wrap;">
+      <input type="hidden" name="tab" value="{{ tab }}">
+      
+      <div class="cc-search-wrapper" style="flex:1; min-width:200px;">
+        <i class="fas fa-search cc-search-icon"></i>
+        <input type="text" name="search" class="cc-input" placeholder="Search events..." value="{{ search }}">
+      </div>
+
+      <select name="category" class="cc-input cc-select" style="width:auto;" onchange="this.form.submit()">
+        <option value="">All Categories</option>
+        {% for cat in categories %}
+          <option {% if selected_category == cat %}selected{% endif %}>{{ cat }}</option>
+        {% endfor %}
+      </select>
+      
+      <button type="submit" class="cc-btn cc-btn--secondary"><i class="fas fa-filter"></i> Filter</button>
+      
+      {% if search or selected_category %}
+        <a href="?tab={{ tab }}" class="cc-btn cc-btn--ghost"><i class="fas fa-times"></i> Clear</a>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+<!-- Events table -->
+{% if events %}
+<div class="cc-table-wrapper">
+  <table class="cc-table">
+    <thead>
+      <tr>
+        <th>Event</th>
+        <th>Date</th>
+        <th>Registrations</th>
+        <th>Status</th>
+        <th>Approval</th>
+        <th style="text-align:right;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for event in events %}
+      <tr>
+        <!-- Event title + category -->
+        <td>
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <span style="font-weight:var(--weight-semibold); color:var(--cc-text);">{{ event.title }}</span>
+            <span class="cc-badge cc-badge--{{ event.category.lower() | replace(' ','-') if event.category else 'general' }}" style="width:fit-content;">
+              {{ event.category or 'General' }}
+            </span>
+          </div>
+        </td>
+
+        <!-- Date -->
+        <td>
+          <div style="display:inline-flex; align-items:center; justify-content:center; background:var(--cc-surface-2); padding:2px 8px; border-radius:4px; font-size:var(--text-xs); font-weight:var(--weight-bold);">
+            {{ event.date.strftime('%d %b') if event.date else 'TBD' }}
+          </div>
+          {% if event.time %}
+          <div style="font-size:var(--text-xs); color:var(--cc-text-muted); margin-top:4px;">
+            {{ event.time }}
+          </div>
+          {% endif %}
+        </td>
+
+        <!-- Registrations -->
+        <td>
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <span style="font-size:var(--text-sm); font-weight:var(--weight-semibold);">
+              {{ reg_counts.get(event.id, 0) }}/{{ event.max_participants }}
+            </span>
+            <div class="cc-capacity-bar" style="width:80px;">
+              {% set pct = ((reg_counts.get(event.id, 0) / (event.max_participants or 1)) * 100)|int %}
+              <div class="cc-capacity-bar__fill {% if pct >= 90 %}cc-capacity-bar__fill--full{% elif pct >= 70 %}cc-capacity-bar__fill--warning{% endif %}"
+                   style="width:{{ [pct, 100]|min }}%"></div>
+            </div>
+          </div>
+        </td>
+
+        <!-- Event status -->
+        <td>
+          {% set ev_status = event.status or 'upcoming' %}
+          {% if event.date < today %}
+            {% set ev_status = 'completed' %}
+          {% elif event.date == today %}
+            {% set ev_status = 'active' %}
+          {% endif %}
+          <span class="cc-badge cc-badge--{{ ev_status }}">
+            {{ ev_status | title }}
+          </span>
+        </td>
+
+        <!-- Approval status -->
+        <td>
+          <span class="cc-badge cc-badge--{{ event.approval_status or 'pending' }}">
+            {{ event.approval_status | title if event.approval_status else 'Pending' }}
+          </span>
+        </td>
+
+        <!-- Actions -->
+        <td>
+          <div style="display:flex; align-items:center; justify-content:flex-end; gap:var(--space-2);">
+            
+            <a href="{{ url_for('organizer_event_stats', event_id=event.id) }}" class="cc-btn cc-btn--secondary cc-btn--sm cc-btn--icon-only" title="View stats">
+              <i class="fas fa-chart-bar"></i>
+            </a>
+
+            <a href="{{ url_for('organizer_edit_event', event_id=event.id) }}" class="cc-btn cc-btn--secondary cc-btn--sm cc-btn--icon-only" title="Edit">
+              <i class="fas fa-pencil"></i>
+            </a>
+            
+            <a href="{{ url_for('organizer_manage_attendance', event_id=event.id) }}" class="cc-btn cc-btn--primary cc-btn--sm">Attendance</a>
+
+            <form method="POST" action="{{ url_for('organizer_delete_event', event_id=event.id) }}" style="display:inline;" onsubmit="return confirm('Delete this event and all its data?')">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="cc-btn cc-btn--danger cc-btn--sm cc-btn--icon-only" title="Delete" aria-label="Delete event">
+                <i class="fas fa-trash"></i>
+              </button>
+            </form>
+
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% else %}
+<div class="cc-empty-state" style="padding:var(--space-12) var(--space-6);">
+  <div class="cc-empty-state__icon"><i class="fas fa-calendar-plus"></i></div>
+  <div class="cc-empty-state__title">No events yet. Create your first event.</div>
+  <div class="cc-empty-state__desc">
+    {% if search or selected_category %}
+    Try adjusting your search or filters.
+    {% else %}
+    Get started by setting up a new event for the campus.
+    {% endif %}
+  </div>
+  <a href="{{ url_for('organizer_create_event') }}" class="cc-btn cc-btn--primary">Create Event</a>
+</div>
+{% endif %}
+{% endblock %}

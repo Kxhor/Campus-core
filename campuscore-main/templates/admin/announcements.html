@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}Announcements{% endblock %}
+{% block page_title %}<i class="fas fa-bullhorn"></i> Announcements{% endblock %}
+
+{% block content %}
+<style>
+.priority-card.selected[data-priority="info"] {
+  border-color: var(--cc-info);
+  background: var(--cc-info-bg);
+  color: var(--cc-info);
+}
+.priority-card.selected[data-priority="warning"] {
+  border-color: var(--cc-warning);
+  background: var(--cc-warning-bg);
+  color: var(--cc-warning);
+}
+.priority-card.selected[data-priority="urgent"] {
+  border-color: var(--cc-crimson);
+  background: var(--cc-crimson-muted);
+  color: var(--cc-crimson);
+}
+.cc-badge--info { background: var(--cc-info-bg); color: var(--cc-info); }
+.cc-badge--warning { background: var(--cc-warning-bg); color: var(--cc-warning); }
+.cc-badge--urgent { background: var(--cc-crimson-muted); color: var(--cc-crimson); }
+</style>
+
+<div class="cc-page-header">
+  <h1 class="cc-page-title">Announcements</h1>
+  <p class="cc-page-subtitle">Broadcast real-time messages to all platform users</p>
+</div>
+
+<div style="display:grid; grid-template-columns: 5fr 7fr; gap:var(--space-6); align-items:start;">
+
+  <!-- Compose Card -->
+  <div class="cc-card cc-card--elevated">
+    <div class="cc-card__header">
+      <h3 style="margin:0; font-size:var(--text-lg);">New Announcement</h3>
+    </div>
+    <div class="cc-card__body">
+      <form method="POST" id="composeForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <div style="margin-bottom:var(--space-5);">
+          <label class="cc-label">Message</label>
+          <textarea name="message" class="cc-textarea" style="width:100%; min-height:120px; resize:vertical;"></textarea>
+        </div>
+
+        <div style="margin-bottom:var(--space-5);">
+          <label class="cc-label">Priority</label>
+          <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:var(--space-3);">
+            <div class="priority-card" data-priority="info" style="padding:var(--space-3); border-radius:var(--radius-lg); border:2px solid var(--cc-border); cursor:pointer; transition:border-color var(--transition-fast), background var(--transition-fast); text-align:center;">
+              <i class="fas fa-info-circle" style="font-size:1.2rem; margin-bottom:var(--space-2); display:block; color:inherit;"></i>
+              <div style="font-weight:600; font-size:var(--text-sm);">Info</div>
+              <div style="font-size:var(--text-xs); opacity:0.8; color:var(--cc-text-muted);">General update</div>
+            </div>
+            
+            <div class="priority-card" data-priority="warning" style="padding:var(--space-3); border-radius:var(--radius-lg); border:2px solid var(--cc-border); cursor:pointer; transition:border-color var(--transition-fast), background var(--transition-fast); text-align:center;">
+              <i class="fas fa-exclamation-triangle" style="font-size:1.2rem; margin-bottom:var(--space-2); display:block; color:inherit;"></i>
+              <div style="font-weight:600; font-size:var(--text-sm);">Warning</div>
+              <div style="font-size:var(--text-xs); opacity:0.8; color:var(--cc-text-muted);">Important notice</div>
+            </div>
+            
+            <div class="priority-card" data-priority="urgent" style="padding:var(--space-3); border-radius:var(--radius-lg); border:2px solid var(--cc-border); cursor:pointer; transition:border-color var(--transition-fast), background var(--transition-fast); text-align:center;">
+              <i class="fas fa-exclamation-circle" style="font-size:1.2rem; margin-bottom:var(--space-2); display:block; color:inherit;"></i>
+              <div style="font-weight:600; font-size:var(--text-sm);">Urgent</div>
+              <div style="font-size:var(--text-xs); opacity:0.8; color:var(--cc-text-muted);">Immediate attention</div>
+            </div>
+          </div>
+          <div style="display:none;">
+            <input type="radio" name="priority" value="info" checked>
+            <input type="radio" name="priority" value="warning">
+            <input type="radio" name="priority" value="urgent">
+          </div>
+        </div>
+
+        <button type="submit" class="cc-btn cc-btn--primary" style="width:100%;"><i class="fas fa-bolt"></i> Broadcast Announcement</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- History Card -->
+  <div class="cc-card">
+    <div class="cc-card__header" style="display:flex; justify-content:space-between; align-items:center;">
+      <h3 style="margin:0; font-size:var(--text-lg);">Broadcast History</h3>
+      <span class="cc-badge cc-badge--pending">{{ announcements|length }} total</span>
+    </div>
+    <div class="cc-card__body" style="padding:0; max-height:600px; overflow-y:auto;">
+      {% if announcements %}
+        {% for ann in announcements %}
+        <div style="display:flex; align-items:flex-start; gap:var(--space-3); padding:var(--space-4) var(--space-5); border-bottom:1px solid var(--cc-border-subtle);">
+          <div style="width:3px; align-self:stretch; border-radius:var(--radius-full); background: {% if ann.priority == 'info' %}var(--cc-info){% elif ann.priority == 'warning' %}var(--cc-warning){% else %}var(--cc-crimson){% endif %};"></div>
+          
+          <div style="flex:1;">
+            <div style="font-weight:500; font-size:var(--text-sm); line-height:1.6; color:var(--cc-text);">{{ ann.message }}</div>
+            <div style="font-size:var(--text-xs); color:var(--cc-text-muted); margin-top:2px;">Sent by {{ ann.author_name }} · {{ ann.formatted_time() }}</div>
+          </div>
+          
+          <div class="cc-badge cc-badge--{{ ann.priority }}">
+            {{ ann.priority_label }}
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div style="text-align:center; padding:var(--space-8); color:var(--cc-text-muted);">
+          <i class="fas fa-bullhorn" style="font-size:3rem; opacity:0.3; display:block; margin-bottom:var(--space-4);"></i>
+          <p style="margin:0; font-weight:var(--weight-medium);">No announcements sent yet</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.querySelectorAll('.priority-card').forEach(card => {
+  card.addEventListener('click', () => {
+    document.querySelectorAll('.priority-card').forEach(c => 
+      c.classList.remove('selected'));
+    card.classList.add('selected');
+    const val = card.dataset.priority;
+    document.querySelector(`input[name="priority"][value="${val}"]`).checked = true;
+  });
+});
+// Select info by default
+document.querySelector('.priority-card[data-priority="info"]').click();
+</script>
+{% endblock %}

@@ -1,0 +1,118 @@
+/* =========================================
+   MOBILE SIDEBAR DRAWER
+   ========================================= */
+
+/* Mobile menu toggle button (only visible on mobile) */
+.cc-mobile-menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--cc-text);
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  transition: background var(--transition-fast);
+}
+.cc-mobile-menu-btn:hover { background: var(--cc-surface-3); }
+
+/* Mobile overlay */
+.cc-sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: calc(var(--z-sidebar) - 1);
+  opacity: 0;
+  transition: opacity var(--transition-base);
+}
+.cc-sidebar-overlay.active {
+  opacity: 1;
+}
+
+@media (max-width: 768px) {
+  /* Show hamburger */
+  .cc-mobile-menu-btn { display: flex; }
+
+  /* Sidebar becomes a drawer */
+  .cc-sidebar {
+    transform: translateX(-100%);
+    transition: transform var(--transition-slow) cubic-bezier(0.4,0,0.2,1),
+                width var(--transition-base);
+  }
+
+  .cc-sidebar.open {
+    transform: translateX(0);
+  }
+
+  /* Show overlay when sidebar is open */
+  .cc-sidebar.open ~ .cc-sidebar-overlay,
+  .cc-sidebar-overlay.active {
+    display: block;
+  }
+
+  /* Main content takes full width */
+  .cc-main {
+    margin-left: 0 !important;
+  }
+
+  /* Topbar: add hamburger */
+  .cc-topbar {
+    padding: 0 var(--space-4);
+  }
+
+  /* Content padding reduced */
+  .cc-content {
+    padding: var(--space-5) var(--space-4);
+  }
+
+  /* Flash messages */
+  .cc-flash-container {
+    padding: 0 var(--space-4);
+  }
+
+  /* Stat cards: 2 per row on mobile */
+  .cc-grid--3,
+  .cc-grid--4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: var(--space-4) !important;
+  }
+
+  /* Events grid: 1 col on mobile */
+  .cc-grid--auto {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Tables: horizontal scroll */
+  .cc-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Event card meta: 1 col */
+  .cc-event-card__meta {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Filter bar: stack */
+  .cc-filter-bar { flex-direction: column; align-items: stretch; }
+
+  /* Date badge smaller on mobile */
+  .cc-date-badge { width: 42px; height: 46px; }
+
+  /* Announcement banner: full width */
+  .cc-announcement-banner {
+    max-width: calc(100vw - var(--space-8));
+  }
+}
+
+@media (max-width: 480px) {
+  /* Stat cards: 1 col on very small screens */
+  .cc-grid--3,
+  .cc-grid--4 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .cc-stat-card__value { font-size: 1.75rem; }
+
+  .cc-content { padding: var(--space-4) var(--space-3); }
+}

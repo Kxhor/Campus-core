@@ -1,0 +1,32 @@
+{% extends "email/base_email.html" %}
+{% block content %}
+<h2 style="color:#111827;font-size:20px;margin:0 0 8px;
+            font-family:Arial,sans-serif;">
+  Account updated
+</h2>
+<p style="color:#4B5563;font-size:14px;line-height:1.6;
+          margin:0 0 24px;font-family:Arial,sans-serif;">
+  Hi {{ user.name }}, your account settings have been updated.
+</p>
+{% if changes %}
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#F4F6F9;border-radius:6px;border-left:4px solid #8B1538;margin:0 0 24px;">
+  <tr>
+    <td style="padding:16px 20px;">
+      <p style="margin:0 0 16px;font-size:14px;font-weight:600;color:#111827;font-family:Arial,sans-serif;">Changes:</p>
+      <ul style="margin:0;padding-left:20px;font-size:13px;color:#4B5563;font-family:Arial,sans-serif;">
+      {% for change in changes %}
+        <li style="margin-bottom:4px;">{{ change }}</li>
+      {% endfor %}
+      </ul>
+    </td>
+  </tr>
+</table>
+{% else %}
+<p style="color:#4B5563;font-size:14px;margin:0 0 24px;font-family:Arial,sans-serif;">
+  Your profile was recently updated.
+</p>
+{% endif %}
+<p style="color:#4B5563;font-size:14px;margin:0;font-family:Arial,sans-serif;">
+  If you did not make these changes, please contact an administrator immediately.
+</p>
+{% endblock %}

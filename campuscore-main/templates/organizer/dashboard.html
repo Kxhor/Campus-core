@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+{% block title %}Organizer Dashboard{% endblock %}
+{% block page_title %}<i class="fas fa-compass"></i> Dashboard{% endblock %}
+
+{% block content %}
+<!-- Page header -->
+<div class="cc-page-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:var(--space-4);">
+  <div>
+    <h1 class="cc-page-title">Organizer Portal</h1>
+    <p class="cc-page-subtitle">Welcome, {{ user.first_name or user.name.split()[0] }} — manage your events and track attendance live</p>
+  </div>
+  <div style="display:flex;gap:var(--space-3);">
+    <a href="{{ url_for('organizer_create_event') }}" class="cc-btn cc-btn--primary">
+      <i class="fas fa-plus"></i> Create Event
+    </a>
+  </div>
+</div>
+
+<!-- Stats row -->
+<div class="cc-grid cc-grid--4" style="margin-bottom:var(--space-8);">
+
+  <div class="cc-stat-card cc-stat-card--events">
+    <div class="cc-stat-card__top">
+      <div>
+        <div class="cc-stat-card__value">{{ total_events }}</div>
+        <div class="cc-stat-card__label">My Events</div>
+      </div>
+      <div class="cc-stat-card__icon"><i class="fas fa-calendar-alt"></i></div>
+    </div>
+  </div>
+
+  <div class="cc-stat-card cc-stat-card--registered">
+    <div class="cc-stat-card__top">
+      <div>
+        <div class="cc-stat-card__value" id="total-registered">{{ total_registrations }}</div>
+        <div class="cc-stat-card__label">Total Registered</div>
+      </div>
+      <div class="cc-stat-card__icon"><i class="fas fa-users"></i></div>
+    </div>
+  </div>
+
+  <div class="cc-stat-card cc-stat-card--users">
+    <div class="cc-stat-card__top">
+      <div>
+        <div class="cc-stat-card__value">{{ active_events }}</div>
+        <div class="cc-stat-card__label">Active Today</div>
+      </div>
+      <div class="cc-stat-card__icon"><i class="fas fa-play-circle"></i></div>
+    </div>
+  </div>
+
+  <div class="cc-stat-card cc-stat-card--certs">
+    <div class="cc-stat-card__top">
+      <div>
+        <div class="cc-stat-card__value">{{ upcoming_count }}</div>
+        <div class="cc-stat-card__label">Upcoming</div>
+      </div>
+      <div class="cc-stat-card__icon"><i class="fas fa-calendar-check"></i></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Main content: events list + live attendance -->
+<div class="cc-grid cc-grid--2" style="margin-bottom:var(--space-8);">
+
+  <!-- My events list -->
+  <div class="cc-card">
+    <div class="cc-card__header">
+      <span class="cc-card__title">My Events</span>
+      <a href="{{ url_for('organizer_events') }}" style="font-size:var(--text-sm);color:var(--cc-crimson);font-weight:500;">View all</a>
+    </div>
+    <div class="cc-card__body" style="padding:0;">
+      {% if events %}
+        {% set ns = namespace(shown=false) %}
+        {% for event in events %}
+          {% if event.date >= today %}
+            {% set ns.shown = true %}
+            <div class="cc-event-list-item">
+              <div class="cc-date-badge">
+                <span class="cc-date-badge__day">{{ event.date.strftime('%d') if event.date else '—' }}</span>
+                <span class="cc-date-badge__month">{{ event.date.strftime('%b') if event.date else '' }}</span>
+              </div>
+              <div class="cc-event-list-item__info">
+                <div class="cc-event-list-item__name">
+                  {{ event.title[:50] ~ '...' if event.title|length > 50 else event.title }}
+                </div>
+                <div class="cc-event-list-item__meta">
+                  <span><i class="fas fa-map-marker-alt"></i> {{ event.venue or 'TBA' }}</span>
+                  <span>{{ event.registrations|length }}/{{ event.max_participants }} registered</span>
+                  <span class="cc-badge cc-badge--{{ event.approval_status or 'pending' }}">
+                    {{ event.approval_status | title if event.approval_status else 'Pending' }}
+                  </span>
+                </div>
+              </div>
+              <div class="cc-event-list-item__actions">
+                {% if event.date < tomorrow %}
+                  <span class="cc-badge cc-badge--active">Live</span>
+                {% else %}
+                  <span class="cc-badge cc-badge--upcoming">Upcoming</span>
+                {% endif %}
+                <a href="{{ url_for('organizer_manage_attendance', event_id=event.id) }}"
+                   class="cc-btn cc-btn--secondary cc-btn--sm">
+                  Manage
+                </a>
+              </div>
+            </div>
+          {% endif %}
+        {% endfor %}
+        {% if not ns.shown %}
+          <div class="cc-empty-state" style="padding:var(--space-10) var(--space-6);">
+            <div class="cc-empty-state__icon" style="width:52px;height:52px;font-size:22px;">
+              <i class="fas fa-calendar-plus"></i>
+            </div>
+            <div class="cc-empty-state__title" style="font-size:var(--text-base);">No upcoming events</div>
+            <div class="cc-empty-state__desc">All your events are in the past.</div>
+            <a href="{{ url_for('organizer_create_event') }}" class="cc-btn cc-btn--primary cc-btn--sm">Create Event</a>
+          </div>
+        {% endif %}
+      {% else %}
+        <div class="cc-empty-state" style="padding:var(--space-10) var(--space-6);">
+          <div class="cc-empty-state__icon" style="width:52px;height:52px;font-size:22px;">
+            <i class="fas fa-calendar-plus"></i>
+          </div>
+          <div class="cc-empty-state__title" style="font-size:var(--text-base);">No events yet</div>
+          <div class="cc-empty-state__desc">Create your first event to get started.</div>
+          <a href="{{ url_for('organizer_create_event') }}" class="cc-btn cc-btn--primary cc-btn--sm">Create Event</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Live attendance panel -->
+  <div class="cc-card">
+    <div class="cc-card__header">
+      <span class="cc-card__title">
+        <i class="fas fa-circle" style="color:var(--cc-success);font-size:8px;margin-right:var(--space-2);"></i>
+        Live Attendance
+      </span>
+    </div>
+    <div class="cc-card__body">
+      <div id="live-attendance-container">
+        {% if active_events > 0 %}
+          {% for event in events %}
+            {% if event.date == today %}
+            <div style="margin-bottom:var(--space-5);">
+              <div style="font-weight:var(--weight-semibold);color:var(--cc-text);margin-bottom:var(--space-2);">
+                {{ event.title }}
+              </div>
+              <div style="display:flex;align-items:center;gap:var(--space-3);">
+                <div class="cc-capacity-bar" style="flex:1;">
+                  {% set pct = ((event.registrations|length / event.max_participants)*100)|int if event.max_participants else 0 %}
+                  <div class="cc-capacity-bar__fill {% if pct >= 90 %}cc-capacity-bar__fill--full{% elif pct >= 70 %}cc-capacity-bar__fill--warning{% endif %}"
+                       style="width:{{ pct }}%"></div>
+                </div>
+                <span style="font-size:var(--text-sm);color:var(--cc-text-muted);white-space:nowrap;">
+                  {{ event.registrations|length }}/{{ event.max_participants }}
+                </span>
+              </div>
+              <a href="{{ url_for('organizer_manage_attendance', event_id=event.id) }}"
+                 class="cc-btn cc-btn--primary cc-btn--sm" style="margin-top:var(--space-3);">
+                <i class="fas fa-qrcode"></i> Manage Attendance
+              </a>
+            </div>
+            {% endif %}
+          {% endfor %}
+        {% else %}
+          <div class="cc-empty-state" style="padding:var(--space-8);">
+            <div class="cc-empty-state__icon" style="width:48px;height:48px;font-size:20px;">
+              <i class="fas fa-calendar-day"></i>
+            </div>
+            <div class="cc-empty-state__title" style="font-size:var(--text-base);">No live events today</div>
+            <div class="cc-empty-state__desc">Events happening today will appear here.</div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Quick action cards -->
+<div class="cc-grid cc-grid--3">
+  <div class="cc-card cc-card--hoverable">
+    <div class="cc-card__body" style="text-align:center;padding:var(--space-8);">
+      <div style="font-size:2rem;color:var(--cc-crimson);margin-bottom:var(--space-3);">
+        <i class="fas fa-plus-circle"></i>
+      </div>
+      <h3 style="font-size:var(--text-md);font-weight:var(--weight-semibold);margin-bottom:var(--space-2);">Create Event</h3>
+      <p style="font-size:var(--text-sm);color:var(--cc-text-muted);margin-bottom:var(--space-4);">
+        Create a new event, set up registration, and publish it to participants.
+      </p>
+      <a href="{{ url_for('organizer_create_event') }}" class="cc-btn cc-btn--primary cc-btn--sm">Create New Event</a>
+    </div>
+  </div>
+  <div class="cc-card cc-card--hoverable">
+    <div class="cc-card__body" style="text-align:center;padding:var(--space-8);">
+      <div style="font-size:2rem;color:var(--cc-gold);margin-bottom:var(--space-3);">
+        <i class="fas fa-calendar"></i>
+      </div>
+      <h3 style="font-size:var(--text-md);font-weight:var(--weight-semibold);margin-bottom:var(--space-2);">All Events</h3>
+      <p style="font-size:var(--text-sm);color:var(--cc-text-muted);margin-bottom:var(--space-4);">
+        View and manage all your events, track registrations, and update details.
+      </p>
+      <a href="{{ url_for('organizer_events') }}" class="cc-btn cc-btn--secondary cc-btn--sm">Manage Events</a>
+    </div>
+  </div>
+  <div class="cc-card cc-card--hoverable">
+    <div class="cc-card__body" style="text-align:center;padding:var(--space-8);">
+      <div style="font-size:2rem;color:var(--cc-gold);margin-bottom:var(--space-3);">
+        <i class="fas fa-bullhorn"></i>
+      </div>
+      <h3 style="font-size:var(--text-md);font-weight:var(--weight-semibold);margin-bottom:var(--space-2);">Announcements</h3>
+      <p style="font-size:var(--text-sm);color:var(--cc-text-muted);margin-bottom:var(--space-4);">
+        Create and send announcements to all students and organizers.
+      </p>
+      <a href="{{ url_for('organizer_announcements') }}" class="cc-btn cc-btn--secondary cc-btn--sm">Create Announcement</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

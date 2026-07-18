@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}System Settings{% endblock %}
+{% block page_title %}<i class="fas fa-cog"></i> System Settings{% endblock %}
+
+{% block content %}
+<div class="cc-page-header">
+  <div>
+    <h1 class="cc-page-heading">System Settings</h1>
+    <p class="cc-page-sub">Platform-wide configuration</p>
+  </div>
+</div>
+
+<div class="settings-layout">
+  <!-- LEFT NAV -->
+  <div class="cc-card settings-nav" style="padding: var(--space-2);">
+    <div class="settings-nav-list">
+      <a href="#appearance" class="settings-nav-item active">Appearance</a>
+    </div>
+  </div>
+
+  <!-- RIGHT CONTENT -->
+  <div class="settings-content">
+    
+    <!-- APPEARANCE SECTION -->
+    <div id="appearance" class="cc-card">
+      <div class="cc-card__header">
+        <h3 class="settings-section-title">Default Appearance</h3>
+      </div>
+      <div class="cc-card__body">
+        <form method="POST">
+          <div style="margin-bottom: var(--space-4);">
+            <label class="cc-label">Default Theme</label>
+            <select name="default_theme" class="cc-input" style="width: auto;">
+              <option value="light" {% if settings.get('default_theme') == 'light' %}selected{% endif %}>Light</option>
+              <option value="dark" {% if settings.get('default_theme') == 'dark' %}selected{% endif %}>Dark</option>
+            </select>
+          </div>
+
+          <div style="margin-bottom: var(--space-4);">
+            <label class="cc-label">Default Language</label>
+            <select name="default_language" class="cc-input" style="width: auto;">
+              <option value="english" {% if settings.get('default_language') == 'english' %}selected{% endif %}>English</option>
+            </select>
+          </div>
+
+          <button type="submit" class="cc-btn cc-btn--primary">Save Settings</button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+.settings-layout { display: flex; gap: var(--space-8); margin-top: var(--space-6); align-items: flex-start; }
+.settings-nav { width: 220px; flex-shrink: 0; position: sticky; top: 100px; }
+.settings-content { flex: 1; display: flex; flex-direction: column; gap: var(--space-8); }
+.settings-nav-list { display: flex; flex-direction: column; gap: var(--space-1); }
+.settings-nav-item { padding: var(--space-3) var(--space-4); color: var(--cc-text-secondary); text-decoration: none; border-radius: var(--radius-sm); transition: all var(--transition-base); font-size: var(--text-sm); }
+.settings-nav-item:hover { background: var(--cc-surface-2); color: var(--cc-text); }
+.settings-nav-item.active { background: var(--cc-surface-3); color: var(--cc-text); font-weight: 600; }
+.settings-section-title { margin: 0; font-size: var(--text-lg); font-weight: var(--weight-semibold); }
+@media (max-width: 768px) { .settings-layout { flex-direction: column; } .settings-nav { width: 100%; position: static; } }
+</style>
+{% endblock %}

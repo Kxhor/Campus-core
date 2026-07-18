@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard — CampusCore{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="cc-page-header">
+  <h1 class="cc-page-title">Platform Overview</h1>
+  <p class="cc-page-subtitle">Real-time analytics for CampusCore SIST</p>
+</div>
+
+<!-- KPI Metrics -->
+<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:var(--space-6); margin-bottom:var(--space-10);">
+  <!-- Total Events -->
+  <div class="cc-stat-card cc-stat-card--events">
+    <div class="cc-stat-card__top">
+      <div class="cc-stat-card__icon"><i class="fas fa-calendar-alt"></i></div>
+    </div>
+    <div class="cc-stat-card__value">{{ total_events|default(0) }}</div>
+    <div class="cc-stat-card__label">Total Events</div>
+  </div>
+
+  <!-- Total Students -->
+  <div class="cc-stat-card cc-stat-card--users">
+    <div class="cc-stat-card__top">
+      <div class="cc-stat-card__icon"><i class="fas fa-user-graduate"></i></div>
+    </div>
+    <div class="cc-stat-card__value">{{ total_students|default(0) }}</div>
+    <div class="cc-stat-card__label">Students</div>
+  </div>
+
+  <!-- Total Registrations -->
+  <div class="cc-stat-card cc-stat-card--registered">
+    <div class="cc-stat-card__top">
+      <div class="cc-stat-card__icon"><i class="fas fa-id-card"></i></div>
+    </div>
+    <div class="cc-stat-card__value">{{ total_registrations|default(0) }}</div>
+    <div class="cc-stat-card__label">Registrations</div>
+  </div>
+
+  <!-- Attendances Verified -->
+  <div class="cc-stat-card cc-stat-card--certs">
+    <div class="cc-stat-card__top">
+      <div class="cc-stat-card__icon"><i class="fas fa-check-circle"></i></div>
+    </div>
+    <div class="cc-stat-card__value">{{ total_present|default(0) }}</div>
+    <div class="cc-stat-card__label">Attendances Verified</div>
+  </div>
+</div>
+
+<div style="display:grid; grid-template-columns: 1fr 380px; gap:var(--space-8); align-items: start;">
+  <!-- Main Column: Charts -->
+  <div style="display:flex; flex-direction:column; gap:var(--space-8);">
+    <div class="cc-card">
+      <div class="cc-card__header">
+        <span class="cc-card__title">Registrations Over Time</span>
+      </div>
+      <div class="cc-card__body" style="height:320px;">
+        <canvas id="registrationsChart"></canvas>
+      </div>
+    </div>
+
+    <div class="cc-card">
+      <div class="cc-card__header">
+        <span class="cc-card__title">Events by Category</span>
+      </div>
+      <div class="cc-card__body" style="height:320px;">
+        <canvas id="categoryChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar Column: Real-time Lists -->
+  <div style="display:flex; flex-direction:column; gap:var(--space-8);">
+    <!-- Today's Live Events -->
+    <div class="cc-card">
+      <div class="cc-card__header">
+        <span class="cc-card__title">Active Today</span>
+        <span class="cc-badge cc-badge--active">{{ active_events|default(0) }} live</span>
+      </div>
+      <div class="cc-card__body" style="padding:0;">
+        {% set todays_events = events | selectattr('date', 'eq', today) | list %}
+        {% if todays_events %}
+          {% for event in todays_events[:5] %}
+            <div class="cc-event-list-item">
+              <div class="cc-date-badge">
+                <span class="cc-date-badge__day">{{ event.date.strftime('%d') }}</span>
+                <span class="cc-date-badge__month">{{ event.date.strftime('%b') }}</span>
+              </div>
+              <div class="cc-event-list-item__info">
+                <div class="cc-event-list-item__name">{{ event.title }}</div>
+                <div class="cc-event-list-item__meta">
+                  <span><i class="fas fa-map-marker-alt"></i> {{ event.venue or 'TBD' }}</span>
+                </div>
+              </div>
+              <div class="cc-event-list-item__actions">
+                <span class="cc-badge cc-badge--active">Live</span>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div style="padding:var(--space-12) var(--space-6); text-align:center; color:var(--cc-text-muted); font-size:var(--text-sm);">
+            No events today
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Upcoming Events Queue -->
+    <div class="cc-card">
+      <div class="cc-card__header">
+        <span class="cc-card__title">Upcoming Events</span>
+        <a href="{{ url_for('admin_events') }}" class="cc-btn cc-btn--ghost cc-btn--sm">View all</a>
+      </div>
+      <div class="cc-card__body" style="padding:0;">
+        {% set upcoming = events | selectattr('date', 'gt', today) | list %}
+        {% if upcoming %}
+          {% for event in upcoming[:5] %}
+            <div class="cc-event-list-item">
+              <div class="cc-date-badge">
+                <span class="cc-date-badge__day">{{ event.date.strftime('%d') }}</span>
+                <span class="cc-date-badge__month">{{ event.date.strftime('%b') }}</span>
+              </div>
+              <div class="cc-event-list-item__info">
+                <div class="cc-event-list-item__name">{{ event.title }}</div>
+                <div class="cc-event-list-item__meta">
+                  <span style="font-size:var(--text-xs); color:var(--cc-text-secondary); font-weight:500;">
+                    {{ reg_counts.get(event.id, 0) if reg_counts else event.registrations|length }}/{{ event.max_participants }}
+                  </span>
+                  <span class="cc-badge cc-badge--{{ 'upcoming' if event.approval_status == 'approved' else 'draft' }}" style="font-size:9px; padding:1px 4px;">
+                    {{ event.approval_status | title }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div style="padding:var(--space-12) var(--space-6); text-align:center; color:var(--cc-text-muted); font-size:var(--text-sm);">
+            No upcoming events
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+@media (max-width: 1024px) {
+  .cc-content > div[style*="grid-template-columns: 1fr 380px"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{% endblock %}

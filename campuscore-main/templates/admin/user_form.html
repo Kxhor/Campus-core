@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}{% if user_obj %}Edit User: {{ user_obj.name }}{% else %}Create User{% endif %}{% endblock %}
+{% block page_title %}<i class="fas fa-user-edit"></i> {% if user_obj %}Edit User{% else %}Create User{% endif %}{% endblock %}
+
+{% block content %}
+<div class="cc-page-header">
+  <div style="display:flex; justify-content:space-between; align-items:flex-start; width:100%;">
+    <div>
+      <a href="{{ url_for('admin_users') }}" style="font-size:var(--text-sm); color:var(--cc-text-muted); text-decoration:none; margin-bottom:var(--space-2); display:inline-block;">&larr; Back to Users</a>
+      <h1 class="cc-page-title" style="margin:0;">{% if user_obj %}Edit User: {{ user_obj.name }}{% else %}Create User{% endif %}</h1>
+    </div>
+  </div>
+</div>
+
+<div style="max-width: 600px; margin: 0 auto;">
+  <div class="cc-card cc-card--elevated">
+    <div class="cc-card__header">
+      <h3 style="margin:0; font-size:var(--text-lg);">{% if user_obj %}Edit User: {{ user_obj.name }}{% else %}Create User{% endif %}</h3>
+    </div>
+    
+    <div class="cc-card__body">
+      <form method="POST" action="{% if user_obj %}{{ url_for('admin_edit_user', uid=user_obj.id) }}{% else %}{{ url_for('admin_create_user') }}{% endif %}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <!-- Personal Information -->
+        <h4 style="margin-bottom:var(--space-3); color:var(--cc-text); font-size:var(--text-base); font-weight:var(--weight-semibold); border-bottom:1px solid var(--cc-border-subtle); padding-bottom:var(--space-2);">Personal Information</h4>
+        
+        <div style="display:flex; flex-direction:column; gap:var(--space-4); margin-bottom:var(--space-5);">
+          <div>
+            <label class="cc-label">Full Name <span style="color:var(--cc-error);">*</span></label>
+            <input type="text" name="name" class="cc-input" value="{{ user_obj.name if user_obj else '' }}" required>
+          </div>
+          
+          <div>
+            <label class="cc-label">Email <span style="color:var(--cc-error);">*</span></label>
+            <input type="email" name="email" class="cc-input" value="{{ user_obj.email if user_obj else '' }}" required>
+          </div>
+          <div>
+            <label class="cc-label">First Name</label>
+            <input type="text" name="first_name" class="cc-input" value="{{ user_obj.first_name if user_obj else '' }}">
+          </div>
+          <div>
+            <label class="cc-label">Last Name</label>
+            <input type="text" name="last_name" class="cc-input" value="{{ user_obj.last_name if user_obj else '' }}">
+          </div>
+          <div>
+            <label class="cc-label">Phone</label>
+            <input type="text" name="phone" class="cc-input" value="{{ user_obj.phone if user_obj else '' }}">
+          </div>
+          <div>
+            <label class="cc-label">LinkedIn URL</label>
+            <input type="url" name="linkedin_url" class="cc-input" value="{{ user_obj.linkedin_url if user_obj else '' }}">
+          </div>
+          <div>
+            <label class="cc-label">GitHub URL</label>
+            <input type="url" name="github_url" class="cc-input" value="{{ user_obj.github_url if user_obj else '' }}">
+          </div>
+          <div>
+            <label class="cc-label">Profile Photo URL</label>
+            <input type="url" name="profile_photo_url" class="cc-input" value="{{ user_obj.profile_photo_url if user_obj else '' }}">
+          </div>
+     class="cc-input" value="{{ user_obj.email if user_obj else '' }}" required>
+          </div>
+          
+          <div>
+            <label class="cc-label">Register Number</label>
+            <input type="text" name="reg_number" class="cc-input" value="{{ user_obj.reg_number if user_obj else '' }}">
+          </div>
+        </div>
+        
+        <!-- Academic Details -->
+        <h4 style="margin-bottom:var(--space-3); color:var(--cc-text); font-size:var(--text-base); font-weight:var(--weight-semibold); border-bottom:1px solid var(--cc-border-subtle); padding-bottom:var(--space-2);">Academic Details</h4>
+        
+        <div style="display:flex; flex-direction:column; gap:var(--space-4); margin-bottom:var(--space-5);">
+          <div>
+            <label class="cc-label">Role</label>
+            <select name="role" id="roleSelect" class="cc-select" onchange="toggleStudentFields()">
+              <option value="student" {% if user_obj and user_obj.role == 'student' %}selected{% endif %}>Student</option>
+              <option value="organizer" {% if user_obj and user_obj.role == 'organizer' %}selected{% endif %}>Organiser</option>
+              <option value="admin" {% if user_obj and user_obj.role == 'admin' %}selected{% endif %}>Admin</option>
+            </select>
+          </div>
+          
+          <div>
+            <label class="cc-label">Department</label>
+            <input type="text" name="department" class="cc-input" value="{{ user_obj.department if user_obj else '' }}">
+          </div>
+          
+          <div id="yearOfStudyField">
+            <label class="cc-label">Year of Study</label>
+            <select name="year_of_study" class="cc-select">
+              <option value="">Select Year</option>
+              <option value="1st Year" {% if user_obj and user_obj.year_of_study == '1st Year' %}selected{% endif %}>1st Year</option>
+              <option value="2nd Year" {% if user_obj and user_obj.year_of_study == '2nd Year' %}selected{% endif %}>2nd Year</option>
+              <option value="3rd Year" {% if user_obj and user_obj.year_of_study == '3rd Year' %}selected{% endif %}>3rd Year</option>
+              <option value="4th Year" {% if user_obj and user_obj.year_of_study == '4th Year' %}selected{% endif %}>4th Year</option>
+            </select>
+          </div>
+          
+          <div>
+            <label class="cc-label">College</label>
+            <input type="text" name="college" class="cc-input" value="{{ user_obj.college if user_obj else '' }}">
+          </div>
+        </div>
+        
+        <!-- Security (create mode only) -->
+        {% if not user_obj %}
+        <h4 style="margin-bottom:var(--space-3); color:var(--cc-text); font-size:var(--text-base); font-weight:var(--weight-semibold); border-bottom:1px solid var(--cc-border-subtle); padding-bottom:var(--space-2);">Security</h4>
+        
+        <div style="display:flex; flex-direction:column; gap:var(--space-4); margin-bottom:var(--space-5);">
+          <div>
+            <label class="cc-label">Password <span style="color:var(--cc-error);">*</span></label>
+            <input type="password" name="password" class="cc-input" required>
+          </div>
+          
+          <div>
+            <label class="cc-label">Confirm Password <span style="color:var(--cc-error);">*</span></label>
+            <input type="password" name="confirm_password" class="cc-input" required>
+          </div>
+          
+          <div style="display:flex; align-items:center; gap:var(--space-2); margin-top:var(--space-2);">
+            <input type="checkbox" name="send_reset_email" id="send_reset_email" style="width:16px; height:16px;">
+            <label for="send_reset_email" style="font-size:var(--text-sm); color:var(--cc-text);">Send password reset email to user</label>
+          </div>
+        </div>
+        {% endif %}
+        
+        <div class="cc-card__footer" style="display:flex; justify-content:flex-end; gap:var(--space-3); padding-top:var(--space-4); border-top:1px solid var(--cc-border-subtle); margin-top:var(--space-4);">
+          <a href="{{ url_for('admin_users') }}" class="cc-btn cc-btn--ghost">Cancel</a>
+          <button type="submit" class="cc-btn cc-btn--primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+  function toggleStudentFields() {
+    var role = document.getElementById('roleSelect').value;
+    var yearField = document.getElementById('yearOfStudyField');
+    if (role === 'student') {
+      yearField.style.display = 'block';
+    } else {
+      yearField.style.display = 'none';
+    }
+  }
+  // Initialize on load
+  document.addEventListener('DOMContentLoaded', toggleStudentFields);
+</script>
+{% endblock %}

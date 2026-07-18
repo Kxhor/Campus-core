@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Certificate Verified — CampusCore{% endblock %}
+
+{% block head %}
+<style>
+.verify-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--cc-sidebar-bg) 0%, #2E1220 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+}
+
+.verify-card {
+  width: 100%;
+  max-width: 400px;
+  padding: var(--space-10) var(--space-8);
+  text-align: center;
+}
+
+.verify-icon-circle {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--cc-success-bg);
+  border: 2px solid var(--cc-success-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto var(--space-6);
+}
+
+.verify-title {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  color: var(--cc-text);
+  margin-bottom: var(--space-4);
+}
+
+.verify-body {
+  font-size: var(--text-sm);
+  color: var(--cc-text-secondary);
+  margin: var(--space-4) 0;
+  line-height: 1.5;
+}
+
+.cert-details {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--cc-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  margin: var(--space-6) 0;
+  text-align: left;
+}
+
+.cert-detail-row {
+  margin-bottom: var(--space-2);
+}
+.cert-detail-row:last-child {
+  margin-bottom: 0;
+}
+
+.cert-label {
+  font-size: var(--text-xs);
+  color: var(--cc-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cert-value {
+  font-size: var(--text-sm);
+  color: var(--cc-text);
+  font-weight: 500;
+}
+</style>
+{% endblock %}
+
+{% block auth_content %}
+<div class="verify-page">
+  <div class="cc-card cc-card--elevated verify-card">
+    <div class="verify-icon-circle">
+      <i class="fas fa-check" style="font-size:28px;color:var(--cc-success)"></i>
+    </div>
+    
+    <h1 class="verify-title">Certificate Verified</h1>
+    
+    <div class="verify-body">
+      This is a genuine certificate issued by Sathyabama Institute of Science and Technology.
+    </div>
+
+    <div class="cert-details">
+      <div class="cert-detail-row">
+        <div class="cert-label">Recipient</div>
+        <div class="cert-value">{{ name }}</div>
+      </div>
+      <div class="cert-detail-row">
+        <div class="cert-label">Event</div>
+        <div class="cert-value">{{ event }}</div>
+      </div>
+      <div class="cert-detail-row">
+        <div class="cert-label">Date</div>
+        <div class="cert-value">{{ date }}</div>
+      </div>
+      <div class="cert-detail-row">
+        <div class="cert-label">Issued On</div>
+        <div class="cert-value">{{ issued_at }}</div>
+      </div>
+    </div>
+
+    <a href="{{ url_for('login') }}" class="cc-btn cc-btn--primary" style="width: 100%; justify-content: center; text-decoration: none;">
+      Back to Login
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/js/all.min.js"></script>
+{% endblock %}
