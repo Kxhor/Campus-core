@@ -554,6 +554,7 @@ def index():
     return redirect(url_for('login'))
 
 @app.route('/login', methods=['GET', 'POST'])
+@limiter.limit('5 per minute')
 def login():
     if request.method == 'POST':
         email = safe_get('email', '').strip()
@@ -584,6 +585,7 @@ def login():
     return render_template('login.html')
 
 @app.route('/register', methods=['GET', 'POST'])
+@limiter.limit('5 per minute')
 def register():
     if request.method == 'POST':
         name = safe_get('name', '').strip()
@@ -645,6 +647,7 @@ def register():
     return render_template('register.html')
 
 @app.route('/reset-password', methods=['GET', 'POST'])
+@limiter.limit('3 per minute')
 def reset_password():
     if 'user_id' not in session:
         flash('You must be logged in to reset your password.', 'warning')
@@ -778,7 +781,6 @@ def google_callback():
 @app.route('/admin/dashboard')
 @admin_required
 @login_required
-@admin_required
 def admin_dashboard():
     user = get_current_user()
     today = date.today()
@@ -801,7 +803,6 @@ def admin_dashboard():
 @app.route('/admin/events')
 @admin_required
 @login_required
-@admin_required
 def admin_events():
     search = request.args.get('search', '')
     category = request.args.get('category', '')
@@ -839,7 +840,6 @@ def admin_events():
 @app.route('/admin/events/<int:event_id>/review', methods=['POST'])
 @admin_required
 @login_required
-@admin_required
 def admin_review_event(event_id):
     event = Event.query.filter(Event.id == event_id, Event.deleted_at.is_(None)).first_or_404()
     decision = request.json.get('decision') if request.is_json else safe_get('decision')
@@ -876,7 +876,7 @@ def admin_review_event(event_id):
     return redirect(url_for('admin_events'))
 
 @app.route('/admin/events/create', methods=['GET', 'POST'])
-@admin_required
+
 @login_required
 @organizer_required
 def create_event():
@@ -961,7 +961,7 @@ def create_event():
     return render_template('admin/event_form.html', event=None, user=user, event_time='', tags=[])
 
 @app.route('/admin/events/<int:event_id>/edit', methods=['GET', 'POST'])
-@admin_required
+
 @login_required
 @organizer_required
 def edit_event(event_id):
@@ -1137,7 +1137,7 @@ def delete_event(event_id):
     return redirect(url_for('admin_events'))
 
 @app.route('/admin/events/<int:event_id>/attendance', methods=['GET', 'POST'])
-@admin_required
+
 @login_required
 @organizer_required
 def manage_attendance(event_id):
@@ -1234,6 +1234,7 @@ def student_event_qr(event_id):
 
 @app.route('/organizer/checkin/scan', methods=['POST'])
 @login_required
+@organizer_required
 def checkin_scan():
     payload = request.json.get('qr_payload', '')
     if not payload:
@@ -1288,7 +1289,6 @@ def checkin_scan():
 @app.route('/admin/students')
 @admin_required
 @login_required
-@admin_required
 def admin_students():
     students = User.query.filter_by(role='student').filter(User.deleted_at.is_(None)).all()
     return render_template('admin/students.html', students=students, user=get_current_user())
@@ -1299,7 +1299,6 @@ def admin_students():
 @app.route('/admin/users')
 @admin_required
 @login_required
-@admin_required
 def admin_users():
     search = request.args.get('search', '')
     role_filter = request.args.get('role', '')
@@ -1320,7 +1319,6 @@ def admin_users():
 @app.route('/admin/users/export')
 @admin_required
 @login_required
-@admin_required
 def admin_export_users():
     search = request.args.get('search', '')
     role_filter = request.args.get('role', '')
@@ -1369,7 +1367,6 @@ def admin_export_users():
 @app.route('/admin/users/create', methods=['GET', 'POST'])
 @admin_required
 @login_required
-@admin_required
 def admin_create_user():
     if request.method == 'POST':
         name = safe_get('name', '').strip()
@@ -1429,7 +1426,6 @@ def admin_create_user():
 @app.route('/admin/users/<int:uid>/edit', methods=['GET', 'POST'])
 @admin_required
 @login_required
-@admin_required
 def admin_edit_user(uid):
     u = User.query.filter(User.id == uid, User.deleted_at.is_(None)).first_or_404()
     if request.method == 'POST':
@@ -1524,7 +1520,6 @@ def admin_user_detail(uid):
 @app.route('/admin/users/<int:uid>/delete', methods=['POST'])
 @admin_required
 @login_required
-@admin_required
 def admin_delete_user(uid):
     u = User.query.filter(User.id == uid, User.deleted_at.is_(None)).first_or_404()
     if u.id == session['user_id']:
@@ -1551,7 +1546,6 @@ def admin_delete_user(uid):
 @app.route('/admin/users/<int:uid>/force-reset', methods=['POST'])
 @admin_required
 @login_required
-@admin_required
 def admin_force_reset(uid):
     u = User.query.filter(User.id == uid, User.deleted_at.is_(None)).first_or_404()
     admin = get_current_user()
@@ -1572,7 +1566,6 @@ def admin_force_reset(uid):
 @app.route('/admin/users/bulk/export', methods=['POST'])
 @admin_required
 @login_required
-@admin_required
 def admin_bulk_export_users():
     data = request.get_json(silent=True) or {}
     ids = data.get('ids', [])
@@ -1601,7 +1594,6 @@ def admin_bulk_export_users():
 @app.route('/admin/users/<int:uid>/toggle-status', methods=['POST'])
 @admin_required
 @login_required
-@admin_required
 def admin_toggle_user_status(uid):
     u = User.query.filter(User.id == uid, User.deleted_at.is_(None)).first_or_404()
     if u.id == session['user_id']:
@@ -1619,7 +1611,6 @@ def admin_toggle_user_status(uid):
 @app.route('/admin/users/<int:uid>/notify', methods=['POST'])
 @admin_required
 @login_required
-@admin_required
 def admin_notify_user(uid):
     u = User.query.filter(User.id == uid, User.deleted_at.is_(None)).first_or_404()
     data = request.get_json(silent=True) or {}
@@ -1641,7 +1632,6 @@ def admin_notify_user(uid):
 @app.route('/admin/users/bulk', methods=['POST'])
 @admin_required
 @login_required
-@admin_required
 def admin_bulk_users():
     data = request.get_json(silent=True) or {}
     ids = data.get('ids', [])
@@ -1675,7 +1665,6 @@ def admin_bulk_users():
 @app.route('/admin/user-settings', methods=['GET', 'POST'])
 @admin_required
 @login_required
-@admin_required
 def admin_user_settings():
     user = get_current_user()
     settings = UserSetting.query.filter_by(user_id=user.id).first()
@@ -1729,7 +1718,6 @@ def admin_user_settings():
 @app.route('/admin/audit-logs')
 @admin_required
 @login_required
-@admin_required
 def admin_audit_logs():
     page = request.args.get('page', 1, type=int)
     per_page = 50
@@ -1744,7 +1732,6 @@ def admin_audit_logs():
 @app.route('/admin/settings', methods=['GET', 'POST'])
 @admin_required
 @login_required
-@admin_required
 def admin_system_settings():
     if request.method == 'POST':
         default_theme = safe_get('default_theme', 'light')
@@ -1769,7 +1756,6 @@ def admin_system_settings():
 @app.route('/admin/profile', methods=['GET', 'POST'])
 @admin_required
 @login_required
-@admin_required
 def admin_profile():
     user = get_current_user()
     if request.method == 'POST':
@@ -3011,7 +2997,7 @@ def compute_organizer_reputation(organizer_id: int):
 
 
 @app.route('/admin/organizers/<int:organizer_id>/reputation')
-@admin_required
+
 @login_required
 @organizer_required
 def organizer_reputation(organizer_id):
@@ -3552,172 +3538,175 @@ def init_db():
         if 'user_session' not in existing_tables:
             db.create_all()
 
-        # Seed sample venues
-        if Venue.query.count() == 0:
-            sample_venues = [
-                Venue(name='Main Auditorium', capacity=500, location='Main Campus, Block A'),
-                Venue(name='Open Air Theatre', capacity=1000, location='Main Campus, Quad'),
-                Venue(name='CS Block Lab', capacity=50, location='Engineering Block, 3rd Floor'),
-                Venue(name='Sports Ground', capacity=2000, location='Sports Complex'),
-                Venue(name='AI Lab', capacity=30, location='Research Block, 2nd Floor'),
-                Venue(name='Seminar Hall A', capacity=150, location='Admin Block, Ground Floor'),
-                Venue(name='Conference Room', capacity=40, location='CS Block, 1st Floor'),
-            ]
-            for v in sample_venues:
-                db.session.add(v)
-            db.session.commit()
-
-        # Backfill participant_id for existing users
-        existing = User.query.filter(User.participant_id.is_(None)).all()
-        if existing:
-            for u in existing:
-                college_code = get_college_code(u.college)
-                u.participant_id = generate_participant_id(college_code)
-            db.session.commit()
-            print(f"   Backfilled participant_id for {len(existing)} user(s).")
-        # Create default admin
-        admin_id = None
-        if not User.query.filter_by(email='admin@sist.ac.in').first():
-            admin = User(
-                name='Admin SIST', first_name='Admin', last_name='SIST',
-                email='admin@sist.ac.in',
-                password=generate_password_hash('admin123'),
-                role='admin',
-                college='Sathyabama Institute of Science and Technology',
-                participant_id=generate_participant_id()
-            )
-            db.session.add(admin)
-            db.session.flush()
-            admin_id = admin.id
-        else:
-            admin_id = User.query.filter_by(email='admin@sist.ac.in').first().id
-
-        # Create demo student
-        student_id = None
-        if not User.query.filter_by(email='student@sist.ac.in').first():
-            student = User(
-                name='Demo Student', first_name='Demo', last_name='Student',
-                email='student@sist.ac.in',
-                password=generate_password_hash('student123'),
-                role='student',
-                reg_number='SIST2024001',
-                department='Computer Science Engineering',
-                college='Sathyabama Institute of Science and Technology',
-                participant_id=generate_participant_id()
-            )
-            db.session.add(student)
-            db.session.flush()
-            student_id = student.id
-        else:
-            student_id = User.query.filter_by(email='student@sist.ac.in').first().id
-
-        # Create demo organizer
-        org_id = None
-        if not User.query.filter_by(email='organizer@sist.ac.in').first():
-            org = User(
-                name='Dr. Rajesh Kumar', first_name='Rajesh', last_name='Kumar',
-                email='organizer@sist.ac.in',
-                password=generate_password_hash('organizer123'),
-                role='organizer',
-                department='Computer Science Engineering',
-                college='Sathyabama Institute of Science and Technology',
-                participant_id=generate_participant_id()
-            )
-            db.session.add(org)
-            db.session.flush()
-            org_id = org.id
-        else:
-            org_id = User.query.filter_by(email='organizer@sist.ac.in').first().id
-
-        # Sample events
-        if Event.query.count() == 0:
-            sample_events = [
-                Event(title='Annual Tech Fest 2025', date=date.today() + timedelta(days=10),
-                    time='09:00 AM', venue='Main Auditorium', category='Technical',
-                    description='Annual technical festival with competitions and workshops.',
-                    tags='technology,competition,workshop',
-                    image_url='https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400',
-                    organizer_name='Dr. Rajesh Kumar', created_by=org_id),
-                Event(title='Cultural Night', date=date.today() + timedelta(days=15),
-                    time='06:00 PM', venue='Open Air Theatre', category='Cultural',
-                    description='A night of music, dance, and cultural performances.',
-                    tags='cultural,music,dance',
-                    image_url='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400',
-                    organizer_name='Dr. Rajesh Kumar', created_by=org_id),
-                Event(title='Hackathon 24H', date=date.today() + timedelta(days=5),
-                    time='10:00 AM', venue='CS Block Lab', category='Technical',
-                    description='24-hour coding hackathon for innovative solutions.',
-                    tags='hackathon,coding,innovation', max_participants=50,
-                    image_url='https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=400',
-                    organizer_name='Admin SIST', created_by=admin_id),
-                Event(title='Sports Day', date=date.today() + timedelta(days=20),
-                    time='07:00 AM', venue='Sports Ground', category='Sports',
-                    description='Annual inter-department sports competitions.',
-                    tags='sports,competition,team', max_participants=200,
-                    organizer_name='Admin SIST', created_by=admin_id),
-                Event(title='AI Workshop', date=date.today() + timedelta(days=3),
-                    time='02:00 PM', venue='AI Lab', category='Workshop',
-                    description='Hands-on workshop on artificial intelligence and machine learning.',
-                    tags='AI,machine learning,workshop', max_participants=30,
-                    image_url='https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400',
-                    organizer_name='Dr. Rajesh Kumar', created_by=org_id),
-            ]
-            for e in sample_events:
-                db.session.add(e)
-            db.session.flush()
-
-            # Register student for some events
-            all_events = Event.query.all()
-            if student_id and all_events:
-                for ev in all_events[:3]:
-                    if not Registration.query.filter_by(user_id=student_id, event_id=ev.id).first():
-                        db.session.add(Registration(user_id=student_id, event_id=ev.id))
-
-            # Sample announcements
-            if Announcement.query.count() == 0:
-                sample_ann = [
-                    Announcement(message='Welcome to CampusCore! Stay tuned for exciting events!',
-                        created_by=admin_id),
-                    Announcement(message='Tech Fest 2025 registration is now open. Limited seats available!',
-                        created_by=org_id),
-                    Announcement(message='AI workshop schedule has been updated. Check event details.',
-                        created_by=org_id),
+        if os.environ.get('INJECT_DEMO_DATA') == 'True':
+            # Seed sample venues
+    
+            if Venue.query.count() == 0:
+                sample_venues = [
+                    Venue(name='Main Auditorium', capacity=500, location='Main Campus, Block A'),
+                    Venue(name='Open Air Theatre', capacity=1000, location='Main Campus, Quad'),
+                    Venue(name='CS Block Lab', capacity=50, location='Engineering Block, 3rd Floor'),
+                    Venue(name='Sports Ground', capacity=2000, location='Sports Complex'),
+                    Venue(name='AI Lab', capacity=30, location='Research Block, 2nd Floor'),
+                    Venue(name='Seminar Hall A', capacity=150, location='Admin Block, Ground Floor'),
+                    Venue(name='Conference Room', capacity=40, location='CS Block, 1st Floor'),
                 ]
-                for a in sample_ann:
-                    db.session.add(a)
-
-            # Sample scores
-            if Score.query.count() == 0 and student_id and all_events:
-                for ev in all_events[:2]:
-                    score = Score(
-                        user_id=student_id, event_id=ev.id,
-                        points=95, reason='First Place - Best Innovation'
-                    )
-                    db.session.add(score)
-
-            # Settings
-            if not UserSetting.query.filter_by(user_id=admin_id).first():
-                db.session.add(UserSetting(user_id=admin_id))
-            if org_id and not UserSetting.query.filter_by(user_id=org_id).first():
-                db.session.add(UserSetting(user_id=org_id))
-
-        # Sample teams (always check, not inside events block)
-        if Team.query.count() == 0:
-            team1 = Team(name='Tech Titans', description='Competitive coding team',
-                created_by=org_id or admin_id)
-            team2 = Team(name='Innovators Hub', description='Project development team',
-                created_by=admin_id)
-            db.session.add_all([team1, team2])
-            db.session.flush()
-            if student_id:
-                from app.models.team import team_members
-                db.session.execute(team_members.insert().values(
-                    team_id=team1.id, user_id=student_id
-                ))
-                db.session.execute(team_members.insert().values(
-                    team_id=team2.id, user_id=student_id
-                ))
-
+                for v in sample_venues:
+                    db.session.add(v)
+                db.session.commit()
+    
+            # Backfill participant_id for existing users
+            existing = User.query.filter(User.participant_id.is_(None)).all()
+            if existing:
+                for u in existing:
+                    college_code = get_college_code(u.college)
+                    u.participant_id = generate_participant_id(college_code)
+                db.session.commit()
+                print(f"   Backfilled participant_id for {len(existing)} user(s).")
+            # Create default admin
+            admin_id = None
+            if not User.query.filter_by(email='admin@sist.ac.in').first():
+                admin = User(
+                    name='Admin SIST', first_name='Admin', last_name='SIST',
+                    email='admin@sist.ac.in',
+                    password=generate_password_hash('admin123'),
+                    role='admin',
+                    college='Sathyabama Institute of Science and Technology',
+                    participant_id=generate_participant_id()
+                )
+                db.session.add(admin)
+                db.session.flush()
+                admin_id = admin.id
+            else:
+                admin_id = User.query.filter_by(email='admin@sist.ac.in').first().id
+    
+            # Create demo student
+            student_id = None
+            if not User.query.filter_by(email='student@sist.ac.in').first():
+                student = User(
+                    name='Demo Student', first_name='Demo', last_name='Student',
+                    email='student@sist.ac.in',
+                    password=generate_password_hash('student123'),
+                    role='student',
+                    reg_number='SIST2024001',
+                    department='Computer Science Engineering',
+                    college='Sathyabama Institute of Science and Technology',
+                    participant_id=generate_participant_id()
+                )
+                db.session.add(student)
+                db.session.flush()
+                student_id = student.id
+            else:
+                student_id = User.query.filter_by(email='student@sist.ac.in').first().id
+    
+            # Create demo organizer
+            org_id = None
+            if not User.query.filter_by(email='organizer@sist.ac.in').first():
+                org = User(
+                    name='Dr. Rajesh Kumar', first_name='Rajesh', last_name='Kumar',
+                    email='organizer@sist.ac.in',
+                    password=generate_password_hash('organizer123'),
+                    role='organizer',
+                    department='Computer Science Engineering',
+                    college='Sathyabama Institute of Science and Technology',
+                    participant_id=generate_participant_id()
+                )
+                db.session.add(org)
+                db.session.flush()
+                org_id = org.id
+            else:
+                org_id = User.query.filter_by(email='organizer@sist.ac.in').first().id
+    
+            # Sample events
+            if Event.query.count() == 0:
+                sample_events = [
+                    Event(title='Annual Tech Fest 2025', date=date.today() + timedelta(days=10),
+                        time='09:00 AM', venue='Main Auditorium', category='Technical',
+                        description='Annual technical festival with competitions and workshops.',
+                        tags='technology,competition,workshop',
+                        image_url='https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400',
+                        organizer_name='Dr. Rajesh Kumar', created_by=org_id),
+                    Event(title='Cultural Night', date=date.today() + timedelta(days=15),
+                        time='06:00 PM', venue='Open Air Theatre', category='Cultural',
+                        description='A night of music, dance, and cultural performances.',
+                        tags='cultural,music,dance',
+                        image_url='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400',
+                        organizer_name='Dr. Rajesh Kumar', created_by=org_id),
+                    Event(title='Hackathon 24H', date=date.today() + timedelta(days=5),
+                        time='10:00 AM', venue='CS Block Lab', category='Technical',
+                        description='24-hour coding hackathon for innovative solutions.',
+                        tags='hackathon,coding,innovation', max_participants=50,
+                        image_url='https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=400',
+                        organizer_name='Admin SIST', created_by=admin_id),
+                    Event(title='Sports Day', date=date.today() + timedelta(days=20),
+                        time='07:00 AM', venue='Sports Ground', category='Sports',
+                        description='Annual inter-department sports competitions.',
+                        tags='sports,competition,team', max_participants=200,
+                        organizer_name='Admin SIST', created_by=admin_id),
+                    Event(title='AI Workshop', date=date.today() + timedelta(days=3),
+                        time='02:00 PM', venue='AI Lab', category='Workshop',
+                        description='Hands-on workshop on artificial intelligence and machine learning.',
+                        tags='AI,machine learning,workshop', max_participants=30,
+                        image_url='https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400',
+                        organizer_name='Dr. Rajesh Kumar', created_by=org_id),
+                ]
+                for e in sample_events:
+                    db.session.add(e)
+                db.session.flush()
+    
+                # Register student for some events
+                all_events = Event.query.all()
+                if student_id and all_events:
+                    for ev in all_events[:3]:
+                        if not Registration.query.filter_by(user_id=student_id, event_id=ev.id).first():
+                            db.session.add(Registration(user_id=student_id, event_id=ev.id))
+    
+                # Sample announcements
+                if Announcement.query.count() == 0:
+                    sample_ann = [
+                        Announcement(message='Welcome to CampusCore! Stay tuned for exciting events!',
+                            created_by=admin_id),
+                        Announcement(message='Tech Fest 2025 registration is now open. Limited seats available!',
+                            created_by=org_id),
+                        Announcement(message='AI workshop schedule has been updated. Check event details.',
+                            created_by=org_id),
+                    ]
+                    for a in sample_ann:
+                        db.session.add(a)
+    
+                # Sample scores
+                if Score.query.count() == 0 and student_id and all_events:
+                    for ev in all_events[:2]:
+                        score = Score(
+                            user_id=student_id, event_id=ev.id,
+                            points=95, reason='First Place - Best Innovation'
+                        )
+                        db.session.add(score)
+    
+                # Settings
+                if not UserSetting.query.filter_by(user_id=admin_id).first():
+                    db.session.add(UserSetting(user_id=admin_id))
+                if org_id and not UserSetting.query.filter_by(user_id=org_id).first():
+                    db.session.add(UserSetting(user_id=org_id))
+    
+            # Sample teams (always check, not inside events block)
+            if Team.query.count() == 0:
+                team1 = Team(name='Tech Titans', description='Competitive coding team',
+                    created_by=org_id or admin_id)
+                team2 = Team(name='Innovators Hub', description='Project development team',
+                    created_by=admin_id)
+                db.session.add_all([team1, team2])
+                db.session.flush()
+                if student_id:
+                    from app.models.team import team_members
+                    db.session.execute(team_members.insert().values(
+                        team_id=team1.id, user_id=student_id
+                    ))
+                    db.session.execute(team_members.insert().values(
+                        team_id=team2.id, user_id=student_id
+                    ))
+    
+            
         db.session.commit()
         print("✅ Database initialized with demo data.")
         print("   Admin: admin@sist.ac.in / admin123")

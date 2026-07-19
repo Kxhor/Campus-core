@@ -5,7 +5,7 @@ Event Management System
 
 Run this file to start the application.
 """
-from app_legacy import app, socketio, init_db
+from app_legacy import app, socketio, init_db, debug_mode
 
 if __name__ == '__main__':
     print("=" * 55)
@@ -14,4 +14,4 @@ if __name__ == '__main__':
     init_db()
     print("\n  🚀  Starting server at http://localhost:5000")
     print("  Press CTRL+C to stop\n")
-    socketio.run(app, debug=True, port=5000, host='0.0.0.0', allow_unsafe_werkzeug=True)
+    socketio.run(app, debug=debug_mode, port=5000, host='0.0.0.0')
