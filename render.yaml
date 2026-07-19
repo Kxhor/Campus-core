@@ -20,6 +20,6 @@ services:
       - key: SECRET_KEY
         generateValue: true
 
-  - type: pgo
-    name: campus-core-db
+databases:
+  - name: campus-core-db
     plan: free
