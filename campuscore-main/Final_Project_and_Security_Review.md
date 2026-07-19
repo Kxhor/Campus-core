@@ -34,11 +34,11 @@ A deep codebase-wide security audit was conducted against 13 strict criteria. We
     *   *Vulnerability:* The application configuration explicitly disabled global CSRF checking (`WTF_CSRF_CHECK_DEFAULT = False`). While some forms manually verified tokens, POST requests to various API endpoints were vulnerable to Cross-Site Request Forgery.
     *   *Fix:* Set `WTF_CSRF_CHECK_DEFAULT = True`. To prevent breaking frontend JavaScript `fetch` calls (like dark mode toggles and QR scanning), a global `<meta name="csrf-token">` was injected into `base.html`, and `fetch` calls were updated to automatically include the `X-CSRFToken` header.
 3.  **Public File Upload Exposure [FIXED]**
-    *   *Vulnerability:* The `/static/uploads/<filename>` endpoint, which serves event PDFs and generated signature images, was completely unauthenticated.
-    *   *Fix:* Added the `@login_required` decorator to ensure only authenticated users can access uploaded resources.
+    *   *Vulnerability:* The `/static/uploads/<filename>` endpoint, which serves event PDFs and generated signature images, was completely unauthenticated. Originally, Flask's built-in static file handler bypassed `@login_required` decorators.
+    *   *Fix:* Disabled default static file serving for uploads and created a custom `/uploads/<path:filename>` route using `send_from_directory()`. We also enforced `os.path.basename()` to completely nullify path-traversal attacks (e.g., `../../`), guaranteeing that uploaded certificates and documents are strictly authenticated.
 4.  **CORS Enforcement [FIXED]**
-    *   *Vulnerability:* Cross-Origin Resource Sharing (CORS) was completely unrestricted, meaning malicious third-party sites could potentially interact with the API if CSRF was bypassed.
-    *   *Fix:* Implemented `Flask-CORS` configured via `CORS(app, origins=os.environ.get('ALLOWED_ORIGINS', '*').split(','))` to securely lock the API to the trusted domain.
+    *   *Vulnerability:* Cross-Origin Resource Sharing (CORS) fell back to a dangerous `*` wildcard if `ALLOWED_ORIGINS` was not defined.
+    *   *Fix:* We updated the `Flask-CORS` initialization to strictly default to same-origin-only if `ALLOWED_ORIGINS` is not defined in the environment. It now emits a safe warning to the server logs rather than allowing wildcard access, firmly locking down the API to the trusted domain.
 5.  **Strict Backend Input Validation [FIXED]**
     *   *Vulnerability:* The `/register` endpoint relied on frontend HTML5 validation and lacked strict backend boundaries for passwords and string lengths.
     *   *Fix:* Added hard backend constraints enforcing a minimum password length of 8 characters and restricting `name` (100) and `email` (120) string lengths to prevent database truncation or DoS vectors.
