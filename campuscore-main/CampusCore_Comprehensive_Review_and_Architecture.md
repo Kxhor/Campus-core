@@ -75,11 +75,11 @@ The Admin portal handles global platform management.
 
 **Screenshots:**
 
-![Admin Dashboard](C:/Users/KISHOR G/.gemini/antigravity-ide/brain/d3fd51ea-c205-4e94-b294-af647ea47988/admin_dashboard_full.png)
+![Admin Dashboard](docs/screenshots/admin_dashboard_full.png)
 <!-- slide -->
-![Admin Users](C:/Users/KISHOR G/.gemini/antigravity-ide/brain/d3fd51ea-c205-4e94-b294-af647ea47988/admin_users_full.png)
+![Admin Users](docs/screenshots/admin_users_full.png)
 <!-- slide -->
-![Admin Events](C:/Users/KISHOR G/.gemini/antigravity-ide/brain/d3fd51ea-c205-4e94-b294-af647ea47988/admin_events_full.png)
+![Admin Events](docs/screenshots/admin_events_full.png)
 
 ### 2.2 Organizer Portal
 The Organizer portal handles event logistics and real-time attendance.
@@ -91,7 +91,7 @@ The Organizer portal handles event logistics and real-time attendance.
 
 **Screenshot:**
 
-![Organizer Dashboard](C:/Users/KISHOR G/.gemini/antigravity-ide/brain/d3fd51ea-c205-4e94-b294-af647ea47988/organizer_dashboard_full.png)
+![Organizer Dashboard](docs/screenshots/organizer_dashboard_full.png)
 
 ### 2.3 Student Portal
 The Student portal handles registrations, browsing, and certificates.
@@ -103,15 +103,15 @@ The Student portal handles registrations, browsing, and certificates.
 
 **Screenshots:**
 
-![Student Dashboard](C:/Users/KISHOR G/.gemini/antigravity-ide/brain/d3fd51ea-c205-4e94-b294-af647ea47988/student_dashboard_full.png)
+![Student Dashboard](docs/screenshots/student_dashboard_full.png)
 <!-- slide -->
-![Student Events](C:/Users/KISHOR G/.gemini/antigravity-ide/brain/d3fd51ea-c205-4e94-b294-af647ea47988/student_events_full.png)
+![Student Events](docs/screenshots/student_events_full.png)
 
 ### 2.4 Shared & Core Components
 - **`templates/auth/login.html` & `register.html`**: Rebuilt the authentication flow around a centered, elevated card with modern inputs and floating labels.
 - **Email Templates (8 files)**: Strictly converted to table-based HTML, removing all external CSS and variables to ensure 100% compatibility with restrictive email clients like Outlook. Hex codes and inline `style=""` attributes were rigorously enforced.
 
-![Login Page](C:/Users/KISHOR G/.gemini/antigravity-ide/brain/d3fd51ea-c205-4e94-b294-af647ea47988/login_page.png)
+![Login Page](docs/screenshots/login_page.png)
 
 ---
 
@@ -177,4 +177,5 @@ However, as a result of the master review, here are the known items flagged for 
 1. **Email Service Configuration (SMTP):** The app attempts to send emails (e.g., password reset, registration success). If your environment variables (`MAIL_SERVER`, `MAIL_USERNAME`, etc.) are not configured in your production `.env` file, the app will log errors internally when attempting to dispatch these emails.
 2. **Production WSGI Server Needed:** The app is currently being run using Flask's built-in development server (Werkzeug). In production, this must be swapped to a robust WSGI server like `gunicorn` or `waitress`.
 3. **Database Scalability (SQLite):** The app is still running on `campuscore.db` (SQLite). While SQLite is safe with parameterized queries (which we are using), it is prone to database-lock errors under heavy concurrent load (e.g., hundreds of students scanning QR codes at exactly the same time). Migration to PostgreSQL/MySQL is flagged as a future architectural necessity.
+
 

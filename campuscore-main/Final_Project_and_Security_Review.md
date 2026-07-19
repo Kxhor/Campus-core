@@ -63,26 +63,27 @@ This gallery showcases the new Liquid Glass & Crimson/Gold design system across 
 
 ### Authentication
 **Login Page**
-![Login Page](https://raw.githubusercontent.com/Kxhor/Campus-core/main/docs/screenshots/login_page.png)
+![Login Page](docs/screenshots/login_page.png)
 
 ### Student View
 **Student Dashboard**
-![Student Dashboard](https://raw.githubusercontent.com/Kxhor/Campus-core/main/docs/screenshots/student_dashboard_full.png)
+![Student Dashboard](docs/screenshots/student_dashboard_full.png)
 
 **Student Events & Registration**
-![Student Events](https://raw.githubusercontent.com/Kxhor/Campus-core/main/docs/screenshots/student_events_full.png)
+![Student Events](docs/screenshots/student_events_full.png)
 
 ### Organizer View
 **Organizer Dashboard**
-![Organizer Dashboard](https://raw.githubusercontent.com/Kxhor/Campus-core/main/docs/screenshots/organizer_dashboard_full.png)
+![Organizer Dashboard](docs/screenshots/organizer_dashboard_full.png)
 
 ### Admin View
 **Admin Dashboard**
-![Admin Dashboard](https://raw.githubusercontent.com/Kxhor/Campus-core/main/docs/screenshots/admin_dashboard_full.png)
+![Admin Dashboard](docs/screenshots/admin_dashboard_full.png)
 
 **Admin Events Management**
-![Admin Events](https://raw.githubusercontent.com/Kxhor/Campus-core/main/docs/screenshots/admin_events_full.png)
+![Admin Events](docs/screenshots/admin_events_full.png)
 
 **Admin User Management**
-![Admin Users](https://raw.githubusercontent.com/Kxhor/Campus-core/main/docs/screenshots/admin_users_full.png)
+![Admin Users](docs/screenshots/admin_users_full.png)
+
 
