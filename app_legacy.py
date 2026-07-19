@@ -1,3 +1,6 @@
+import eventlet
+eventlet.monkey_patch()
+
 from functools import wraps
 
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, send_file, send_from_directory, current_app, abort
