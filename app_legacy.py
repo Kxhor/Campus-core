@@ -554,7 +554,7 @@ def index():
     return redirect(url_for('login'))
 
 @app.route('/login', methods=['GET', 'POST'])
-@limiter.limit('5 per minute')
+@limiter.limit('50 per minute')
 def login():
     if request.method == 'POST':
         email = safe_get('email', '').strip()
@@ -585,7 +585,7 @@ def login():
     return render_template('login.html')
 
 @app.route('/register', methods=['GET', 'POST'])
-@limiter.limit('5 per minute')
+@limiter.limit('50 per minute')
 def register():
     if request.method == 'POST':
         name = safe_get('name', '').strip()
