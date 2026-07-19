@@ -100,9 +100,10 @@ def rate_limit_error(e):
 
 
 @app.before_request
-def enforce_https():
-    debug_mode = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
-    if request.headers.get('X-Forwarded-Proto', 'http') == 'http' and not debug_mode:
+def redirect_to_https():
+    if (os.environ.get('FORCE_HTTPS') == 'True' 
+            and not request.is_secure 
+            and request.headers.get('X-Forwarded-Proto', 'http') != 'https'):
         url = request.url.replace('http://', 'https://', 1)
         return redirect(url, code=301)
 
