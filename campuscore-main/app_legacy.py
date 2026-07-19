@@ -23,6 +23,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
 from app.extensions import db, socketio, migrate, csrf
+from flask_cors import CORS
 from app.services.analytics import get_event_analytics, get_category_stats
 from app.services.announcements import create_announcement, delete_announcement, get_all_announcements, mark_all_read
 from app.utils.generate_participant_id import generate_participant_id, get_college_code
@@ -33,9 +34,15 @@ load_dotenv()
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 app.config['QR_SECRET_KEY'] = os.environ.get('QR_SECRET_KEY', secrets.token_hex(32))
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///campuscore.db'
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+
+CORS(app, origins=os.environ.get('ALLOWED_ORIGINS', '*').split(','))
+
+# Database Config
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URI', 'sqlite:///campuscore.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['WTF_CSRF_CHECK_DEFAULT'] = False
+app.config['WTF_CSRF_CHECK_DEFAULT'] = True
 
 debug_mode = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
 
@@ -581,6 +588,14 @@ def register():
         if not name or not email or not password:
             flash('All fields are required.', 'danger')
             return render_template('register.html')
+            
+        if len(password) < 8:
+            flash('Password must be at least 8 characters long.', 'danger')
+            return render_template('register.html')
+            
+        if len(name) > 100 or len(email) > 120:
+            flash('Name or email exceeds maximum allowed length.', 'danger')
+            return render_template('register.html')
 
         if User.query.filter_by(email=email).filter(User.deleted_at.is_(None)).first():
             flash('Email already registered.', 'danger')
@@ -1043,7 +1058,10 @@ os.makedirs(SIGNATURE_FOLDER, exist_ok=True)
 @app.route('/api/events/<int:event_id>/signatories/add', methods=['POST'])
 @login_required
 def api_add_signatory(event_id):
+    user = get_current_user()
     event = Event.query.filter(Event.id == event_id, Event.deleted_at.is_(None)).first_or_404()
+    if event.created_by != user.id and user.role != 'admin':
+        return jsonify({'error': 'Permission denied'}), 403
     name = safe_get('name', '').strip()
     title = safe_get('title', '').strip() or 'Event Coordinator'
     if not name:
@@ -1071,6 +1089,10 @@ def api_add_signatory(event_id):
 @app.route('/api/events/<int:event_id>/signatories/<int:signatory_id>/remove', methods=['POST'])
 @login_required
 def api_remove_signatory(event_id, signatory_id):
+    user = get_current_user()
+    event = Event.query.filter(Event.id == event_id, Event.deleted_at.is_(None)).first_or_404()
+    if event.created_by != user.id and user.role != 'admin':
+        return jsonify({'error': 'Permission denied'}), 403
     sig = CertificateSignatory.query.filter_by(id=signatory_id, event_id=event_id).first_or_404()
     if sig.signature_image:
         img_path = os.path.join(SIGNATURE_FOLDER, sig.signature_image)
@@ -1084,7 +1106,6 @@ def api_remove_signatory(event_id, signatory_id):
 @app.route('/admin/events/<int:event_id>/delete', methods=['POST'])
 @admin_required
 @login_required
-@organizer_required
 def delete_event(event_id):
     event = Event.query.filter(Event.id == event_id, Event.deleted_at.is_(None)).first_or_404()
     # Notify registered students before deleting
@@ -1469,7 +1490,6 @@ def admin_edit_user(uid):
 @app.route('/admin/users/<int:uid>')
 @admin_required
 @login_required
-@admin_required
 def admin_user_detail(uid):
     u = User.query.filter(User.id == uid, User.deleted_at.is_(None)).first_or_404()
 
@@ -2856,7 +2876,6 @@ def organizer_edit_event(event_id):
 @app.route('/events/<int:event_id>/delete', methods=['POST'])
 @organizer_required
 @login_required
-@organizer_required
 def organizer_delete_event(event_id):
     user = get_current_user()
     event = Event.query.filter(Event.id == event_id, Event.deleted_at.is_(None)).first_or_404()
@@ -3402,6 +3421,7 @@ def api_event_charts(event_id):
 # ─── Serve uploaded PDFs ──────────────────────────────────────────────────────────
 
 @app.route('/static/uploads/<filename>')
+@login_required
 def serve_upload(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 

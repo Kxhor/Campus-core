@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>{% block title %}CampusCore{% endblock %} — SIST</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
@@ -188,7 +189,7 @@
         if (icon) icon.className = 'fas fa-sun';
       }
       // CSRF-safe: include token as X-CSRFToken header via fetch instead of sendBeacon
-      const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
       fetch('/api/settings', {
         method: 'POST',
         headers: {

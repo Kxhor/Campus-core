@@ -205,9 +205,13 @@ function handleQRScan(payload) {
   var resultEl = document.getElementById('qrResult');
   resultEl.innerHTML = '<span style="color:var(--cc-warning);"><i class="fas fa-spinner fa-spin"></i> Verifying...</span>';
 
+  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
   fetch('/organizer/checkin/scan', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 
+      'Content-Type': 'application/json',
+      'X-CSRFToken': csrfToken
+    },
     body: JSON.stringify({ qr_payload: payload })
   })
   .then(function(res) { return res.json(); })
