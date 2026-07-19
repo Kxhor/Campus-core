@@ -55,3 +55,34 @@ A deep codebase-wide security audit was conducted against 13 strict criteria. We
 ## Conclusion
 
 The CampusCore application is now functionally complete, visually stunning, and rigorously secured. By addressing BOLA vulnerabilities, enforcing global CSRF, restricting CORS, and hardening backend validation, the system is fully prepared for a production handover to the Head of Department and the college IT team.
+
+## 4. UI Gallery
+
+This gallery showcases the new Liquid Glass & Crimson/Gold design system across the three primary roles and dashboards. 
+*(Note: These images are served directly from the GitHub repository so your AI assistant can view them without local paths.)*
+
+### Authentication
+**Login Page**
+![Login Page](https://raw.githubusercontent.com/Kxhor/Campus-core/main/docs/screenshots/login_page.png)
+
+### Student View
+**Student Dashboard**
+![Student Dashboard](https://raw.githubusercontent.com/Kxhor/Campus-core/main/docs/screenshots/student_dashboard_full.png)
+
+**Student Events & Registration**
+![Student Events](https://raw.githubusercontent.com/Kxhor/Campus-core/main/docs/screenshots/student_events_full.png)
+
+### Organizer View
+**Organizer Dashboard**
+![Organizer Dashboard](https://raw.githubusercontent.com/Kxhor/Campus-core/main/docs/screenshots/organizer_dashboard_full.png)
+
+### Admin View
+**Admin Dashboard**
+![Admin Dashboard](https://raw.githubusercontent.com/Kxhor/Campus-core/main/docs/screenshots/admin_dashboard_full.png)
+
+**Admin Events Management**
+![Admin Events](https://raw.githubusercontent.com/Kxhor/Campus-core/main/docs/screenshots/admin_events_full.png)
+
+**Admin User Management**
+![Admin Users](https://raw.githubusercontent.com/Kxhor/Campus-core/main/docs/screenshots/admin_users_full.png)
+
