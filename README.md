@@ -28,16 +28,16 @@ CampusCore is a comprehensive event management platform tailored for the Sathyab
     <td><strong>Student Dashboard</strong><br><img src="docs/screenshots/student_dashboard_full.png" width="400" alt="Student Dashboard"></td>
   </tr>
   <tr>
-    <td><strong>Student Events</strong><br><img src="docs/screenshots/student_events_full.png" width="400" alt="Student Events"></td>
+    <td><strong>Student Events (Filters)</strong><br><img src="docs/screenshots/student_events_full_1.png" width="400" alt="Student Events Filter"></td>
+    <td><strong>Student Events (List)</strong><br><img src="docs/screenshots/student_events_full_2.png" width="400" alt="Student Events List"></td>
+  </tr>
+  <tr>
     <td><strong>Organizer Dashboard</strong><br><img src="docs/screenshots/organizer_dashboard_full.png" width="400" alt="Organizer Dashboard"></td>
-  </tr>
-  <tr>
     <td><strong>Admin Dashboard</strong><br><img src="docs/screenshots/admin_dashboard_full.png" width="400" alt="Admin Dashboard"></td>
-    <td><strong>Admin Events</strong><br><img src="docs/screenshots/admin_events_full.png" width="400" alt="Admin Events"></td>
   </tr>
   <tr>
+    <td><strong>Admin Events</strong><br><img src="docs/screenshots/admin_events_full.png" width="400" alt="Admin Events"></td>
     <td><strong>Admin Users</strong><br><img src="docs/screenshots/admin_users_full.png" width="400" alt="Admin Users"></td>
-    <td></td>
   </tr>
 </table>
 
@@ -191,7 +191,7 @@ gunicorn -w 4 -b 0.0.0.0:5000 "app_legacy:app"
 ```bash
 pip install playwright
 playwright install chromium
-python scratch/e2e_playwright.py
+python tests/e2e_playwright.py
 ```
 Expected output: 17/17 tests passing
 
