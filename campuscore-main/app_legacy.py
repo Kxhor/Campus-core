@@ -85,14 +85,18 @@ google = oauth.register(
 )
 
 # --- Rate Limiter ---
+_debug_mode_for_limits = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
 limiter = Limiter(
     app=app,
     key_func=get_remote_address,
     storage_uri="memory://",
-    default_limits=["200 per day", "50 per hour"],
+    default_limits=["10000 per day", "2000 per hour"] if _debug_mode_for_limits else ["200 per day", "50 per hour"],
 )
 
 @app.errorhandler(429)
+def rate_limit_error(e):
+    return "Too many requests. Please slow down.", 429
+
 
 
 @app.before_request
