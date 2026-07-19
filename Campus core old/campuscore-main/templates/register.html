@@ -1,0 +1,336 @@
+{% extends "base.html" %}
+{% block title %}Create Account{% endblock %}
+{% block body_class %}erp-login-body{% endblock %}
+
+{% block auth_content %}
+<div class="erp-login-wrapper erp-reg-wrapper">
+  <div class="erp-login-card erp-reg-card">
+    <div class="erp-login-header">
+      <a href="/">
+        <img src="https://erp.sathyabama.ac.in/assets/images/sathyabama_header-logo-A++.jpg" alt="Sathyabama" class="erp-login-logo"/>
+      </a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}{% for cat, msg in messages %}
+        <div class="flash flash-{{ cat }}">{{ msg }}</div>
+      {% endfor %}{% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('register') }}" class="erp-login-form" id="registerForm" onsubmit="return validateRegisterForm()" novalidate>
+      <div class="erp-form-group">
+        <label for="reg_name">Full Name</label>
+        <input type="text" id="reg_name" name="name" placeholder="Your Name" required/>
+        <small class="erp-field-error" id="name_error">Please enter your full name</small>
+      </div>
+
+      <div class="erp-form-group">
+        <label for="reg_email">Email</label>
+        <input type="email" id="reg_email" name="email" placeholder="Your Email" required/>
+        <small class="erp-field-error" id="email_error">Please enter a valid email address</small>
+      </div>
+
+      <div class="erp-form-row">
+        <div class="erp-form-group">
+          <label for="reg_phone">Phone</label>
+          <input type="text" id="reg_phone" name="phone" placeholder="+91 9876543210" maxlength="15"/>
+        </div>
+        <div class="erp-form-group">
+          <label for="year_of_study">Year</label>
+          <select id="year_of_study" name="year_of_study" class="erp-select">
+            <option value="">Select</option>
+            <option value="1">1st Year</option>
+            <option value="2">2nd Year</option>
+            <option value="3">3rd Year</option>
+            <option value="4">4th Year</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="erp-form-group">
+        <label for="reg_number">Registration Number</label>
+        <input type="text" id="reg_number" name="reg_number" placeholder="Your Register Number"/>
+      </div>
+
+      <div class="erp-form-group">
+        <label for="department">Department</label>
+        <select id="department" name="department" class="erp-select">
+          <option value="">Select Department</option>
+          <option>Computer Science Engineering</option>
+          <option>Electronics & Communication Engineering</option>
+          <option>Mechanical Engineering</option>
+          <option>Civil Engineering</option>
+          <option>Information Technology</option>
+          <option>Biotechnology</option>
+          <option>Aerospace Engineering</option>
+        </select>
+      </div>
+
+      <div class="erp-form-group pwd">
+        <label for="reg_password">Password</label>
+        <input type="password" id="reg_password" name="password" placeholder="Create a strong password" required minlength="6"/>
+        <i role="button" class="fas fa-eye pw-toggle-erp" onclick="togglePw('reg_password')"></i>
+        <div class="erp-pw-strength" id="pwStrength">
+          <div class="erp-pw-bar"><div id="pwBarFill"></div></div>
+          <small id="pwLabel" class="erp-pw-label"></small>
+        </div>
+      </div>
+
+      <div class="erp-form-group pwd">
+        <label for="reg_confirm">Confirm Password</label>
+        <input type="password" id="reg_confirm" placeholder="Re-enter password" required/>
+        <i role="button" class="fas fa-eye pw-toggle-erp" onclick="togglePw('reg_confirm')"></i>
+        <small class="erp-field-error" id="pw_error">Passwords do not match</small>
+      </div>
+
+      <label class="erp-remember">
+        <input type="checkbox" id="termsCheck" required/>
+        <span class="erp-check-rem"></span>
+        <span>I agree to the <a href="#" onclick="return false;">Terms of Service</a></span>
+      </label>
+      <small class="erp-field-error" id="terms_error">You must agree to the terms</small>
+
+      <button type="submit" class="erp-btn-primary">Create Account</button>
+    </form>
+
+    <div class="erp-login-footer">
+      <span class="erp-footer-muted">Already have an account?</span>
+      <a href="{{ url_for('login') }}">Sign in</a>
+    </div>
+  </div>
+
+  <div class="erp-footer">&copy; 2026 Sathyabama Institute of Science and Technology</div>
+</div>
+
+<style>
+.erp-reg-wrapper {
+  padding: 50px 20px;
+}
+
+.erp-reg-card {
+  max-width: 500px;
+  padding: 44px 44px 32px;
+}
+
+.erp-reg-card .erp-login-logo {
+  max-width: 240px;
+}
+
+.erp-reg-card .erp-login-header {
+  margin-bottom: 32px;
+}
+
+.erp-reg-card .erp-login-form {
+  gap: 22px;
+}
+
+.erp-reg-card .erp-form-group label {
+  font-size: 0.9rem;
+}
+
+.erp-reg-card .erp-form-group input,
+.erp-reg-card .erp-select {
+  padding: 16px 18px;
+  font-size: 1.05rem;
+}
+
+.erp-reg-card .erp-form-group input::placeholder {
+  font-size: 1rem;
+}
+
+.erp-reg-card .pw-toggle-erp {
+  top: 40px;
+  right: 15px;
+  font-size: 1rem;
+}
+
+.erp-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.erp-field-error {
+  display: none;
+  color: rgba(255, 160, 160, 0.8);
+  font-size: 0.8rem;
+  margin-top: 4px;
+}
+
+.erp-form-group.has-error input,
+.erp-form-group.has-error .erp-select {
+  border-color: rgba(255, 80, 80, 0.4);
+}
+
+.erp-pw-strength {
+  display: none;
+  margin-top: 8px;
+}
+.erp-pw-bar {
+  height: 3px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+#pwBarFill {
+  height: 100%;
+  width: 0%;
+  border-radius: 3px;
+  transition: all 0.3s ease;
+}
+.erp-pw-label {
+  font-size: 0.75rem;
+  margin-top: 4px;
+  display: block;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.erp-remember {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.45);
+  position: relative;
+  user-select: none;
+}
+.erp-remember input { position: absolute; opacity: 0; height: 0; width: 0; }
+.erp-check-rem {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.erp-remember input:checked ~ .erp-check-rem {
+  background: #831238;
+  border-color: #831238;
+}
+.erp-remember input:checked ~ .erp-check-rem::after {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 1px;
+  background: white;
+}
+.erp-remember a { color: rgba(255, 255, 255, 0.55); }
+.erp-remember a:hover { color: #fff; }
+
+.erp-reg-card .erp-btn-primary {
+  padding: 15px;
+  font-size: 1.05rem;
+}
+
+.erp-reg-card .erp-login-footer {
+  margin-top: 24px;
+  padding-top: 20px;
+}
+.erp-reg-card .erp-footer-muted,
+.erp-reg-card .erp-login-footer a {
+  font-size: 0.9rem;
+}
+
+@media (max-width: 480px) {
+  .erp-reg-card { padding: 28px 22px 24px; max-width: 100%; }
+  .erp-form-row { grid-template-columns: 1fr; gap: 22px; }
+}
+</style>
+
+<script>
+function togglePw(id) {
+  const el = document.getElementById(id);
+  const icon = el.parentElement.querySelector('.pw-toggle-erp');
+  if (el.type === 'password') {
+    el.type = 'text';
+    icon.className = 'fas fa-eye-slash pw-toggle-erp';
+  } else {
+    el.type = 'password';
+    icon.className = 'fas fa-eye pw-toggle-erp';
+  }
+}
+
+function validateRegisterForm() {
+  let valid = true;
+  const name = document.getElementById('reg_name');
+  const email = document.getElementById('reg_email');
+  const pw = document.getElementById('reg_password');
+  const confirm = document.getElementById('reg_confirm');
+  const terms = document.getElementById('termsCheck');
+
+  document.querySelectorAll('.erp-form-group.has-error').forEach(function(e) { e.classList.remove('has-error'); });
+  document.querySelectorAll('.erp-field-error').forEach(function(e) { e.style.display = 'none'; });
+
+  if (!name.value.trim()) {
+    document.getElementById('name_error').style.display = 'block';
+    name.closest('.erp-form-group').classList.add('has-error');
+    valid = false;
+  }
+
+  if (!email.value.trim() || !email.value.includes('@')) {
+    document.getElementById('email_error').style.display = 'block';
+    email.closest('.erp-form-group').classList.add('has-error');
+    valid = false;
+  }
+
+  if (pw.value.length < 6) {
+    document.getElementById('pw_error').textContent = 'Password must be at least 6 characters';
+    document.getElementById('pw_error').style.display = 'block';
+    pw.closest('.erp-form-group').classList.add('has-error');
+    valid = false;
+  }
+
+  if (pw.value !== confirm.value) {
+    document.getElementById('pw_error').textContent = 'Passwords do not match';
+    document.getElementById('pw_error').style.display = 'block';
+    pw.closest('.erp-form-group').classList.add('has-error');
+    confirm.closest('.erp-form-group').classList.add('has-error');
+    valid = false;
+  }
+
+  if (!terms.checked) {
+    document.getElementById('terms_error').style.display = 'block';
+    valid = false;
+  }
+
+  return valid;
+}
+
+document.getElementById('reg_password').addEventListener('input', function() {
+  const val = this.value;
+  const bar = document.getElementById('pwBarFill');
+  const label = document.getElementById('pwLabel');
+  const container = document.getElementById('pwStrength');
+  if (!val) { container.style.display = 'none'; return; }
+  container.style.display = 'block';
+  let score = 0;
+  if (val.length >= 6) score += 25;
+  if (val.length >= 10) score += 15;
+  if (/[a-z]/.test(val) && /[A-Z]/.test(val)) score += 20;
+  if (/\d/.test(val)) score += 20;
+  if (/[^a-zA-Z0-9]/.test(val)) score += 20;
+  let pct = Math.min(score, 100);
+  bar.style.width = pct + '%';
+  if (score < 30) { bar.style.background = '#ef4444'; label.textContent = 'Weak'; label.style.color = '#ef4444'; }
+  else if (score < 60) { bar.style.background = '#f59e0b'; label.textContent = 'Fair'; label.style.color = '#f59e0b'; }
+  else if (score < 80) { bar.style.background = '#22c55e'; label.textContent = 'Good'; label.style.color = '#22c55e'; }
+  else { bar.style.background = '#16a34a'; label.textContent = 'Strong'; label.style.color = '#16a34a'; }
+});
+
+document.getElementById('reg_confirm').addEventListener('input', function() {
+  const pw = document.getElementById('reg_password').value;
+  const err = document.getElementById('pw_error');
+  if (this.value && this.value !== pw) {
+    err.textContent = 'Passwords do not match';
+    err.style.display = 'block';
+  } else {
+    err.style.display = 'none';
+  }
+});
+</script>
+{% endblock %}

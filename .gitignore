@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+.env
+*.egg-info/
+dist/
+build/
+
+# Database
+*.db
+*.sqlite
+campuscore.db
+
+# Uploads (user-generated content — not for version control)
+static/uploads/*
+!static/uploads/.gitkeep
+
+# Node.js
+email-service/node_modules/
+email-service/.env
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+
+# Testing
+.playwright/
+test-results/
+
+# Alembic
+migrations/versions/*.pyc
