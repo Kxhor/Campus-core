@@ -24,6 +24,7 @@ from flask_limiter.util import get_remote_address
 
 from app.extensions import db, socketio, migrate, csrf
 from flask_cors import CORS
+from supabase import create_client, Client
 from app.services.analytics import get_event_analytics, get_category_stats
 from app.services.announcements import create_announcement, delete_announcement, get_all_announcements, mark_all_read
 from app.utils.generate_participant_id import generate_participant_id, get_college_code
@@ -51,7 +52,10 @@ else:
 CORS(app, origins=_allowed_origins)
 
 # Database Config
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URI', 'sqlite:///campuscore.db')
+db_url = os.environ.get('DATABASE_URL') or os.environ.get('DATABASE_URI', 'sqlite:///campuscore.db')
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['WTF_CSRF_CHECK_DEFAULT'] = True
 
@@ -74,6 +78,35 @@ def allowed_file(filename):
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+# Supabase Storage Configuration
+supabase_url = os.environ.get("SUPABASE_URL")
+supabase_key = os.environ.get("SUPABASE_KEY")
+supabase: Client = create_client(supabase_url, supabase_key) if supabase_url and supabase_key else None
+SUPABASE_BUCKET = "campuscore-uploads"
+
+def save_upload(file_obj, filename):
+    if supabase:
+        file_bytes = file_obj.read()
+        content_type = getattr(file_obj, 'content_type', 'application/octet-stream')
+        try:
+            supabase.storage.from_(SUPABASE_BUCKET).upload(filename, file_bytes, {"content-type": content_type})
+        except Exception as e:
+            print(f"Supabase upload error: {e}")
+    else:
+        file_obj.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+def delete_upload(filename):
+    if not filename: return
+    if supabase:
+        try:
+            supabase.storage.from_(SUPABASE_BUCKET).remove([filename])
+        except Exception:
+            pass
+    else:
+        old_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        if os.path.exists(old_path):
+            os.remove(old_path)
+
 # Flask-Mail configuration
 app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
 app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
@@ -85,7 +118,7 @@ app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', 'norep
 db.init_app(app)
 migrate.init_app(app, db)
 csrf.init_app(app)
-socketio.init_app(app, async_mode="threading")
+socketio.init_app(app)
 
 mail = Mail(app)
 
@@ -915,7 +948,7 @@ def create_event():
                 original_name = secure_filename(file.filename)
                 ext = original_name.rsplit('.', 1)[1].lower() if '.' in original_name else 'pdf'
                 pdf_filename = f'{secrets.token_hex(8)}--{original_name}'
-                file.save(os.path.join(app.config['UPLOAD_FOLDER'], pdf_filename))
+                save_upload(file, pdf_filename)
             elif file and file.filename and not allowed_file(file.filename):
                 flash('Only PDF files are allowed.', 'danger')
 
@@ -1011,13 +1044,11 @@ def edit_event(event_id):
             if file and file.filename and allowed_file(file.filename):
                 # Remove old file
                 if event.pdf_file:
-                    old_path = os.path.join(app.config['UPLOAD_FOLDER'], event.pdf_file)
-                    if os.path.exists(old_path):
-                        os.remove(old_path)
+                    delete_upload(event.pdf_file)
                 original_name = secure_filename(file.filename)
                 ext = original_name.rsplit('.', 1)[1].lower() if '.' in original_name else 'pdf'
                 event.pdf_file = f'{secrets.token_hex(8)}--{original_name}'
-                file.save(os.path.join(app.config['UPLOAD_FOLDER'], event.pdf_file))
+                save_upload(file, event.pdf_file)
             elif file and file.filename and not allowed_file(file.filename):
                 flash('Only PDF files are allowed.', 'danger')
 
@@ -1123,9 +1154,7 @@ def delete_event(event_id):
     notify_event_cancelled(event)
     # Clean up uploaded PDF
     if event.pdf_file:
-        pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], event.pdf_file)
-        if os.path.exists(pdf_path):
-            os.remove(pdf_path)
+        delete_upload(event.pdf_file)
     socketio.emit('event:deleted', {'id': event.id, 'title': event.title})
     now = datetime.utcnow()
     Registration.query.filter_by(event_id=event_id).update({'deleted_at': now, 'status': 'cancelled'})
@@ -2725,7 +2754,7 @@ def organizer_create_event():
                 original_name = secure_filename(file.filename)
                 ext = original_name.rsplit('.', 1)[1].lower() if '.' in original_name else 'pdf'
                 pdf_filename = f'{secrets.token_hex(8)}--{original_name}'
-                file.save(os.path.join(app.config['UPLOAD_FOLDER'], pdf_filename))
+                save_upload(file, pdf_filename)
             elif file and file.filename and not allowed_file(file.filename):
                 flash('Only PDF files are allowed.', 'danger')
 
@@ -3319,11 +3348,13 @@ def generate_certificate(user, event, verify_url=None, verification_code=None):
     # Verification code and QR
     if verify_url and verification_code:
         import qrcode
+        from reportlab.lib.utils import ImageReader
         qr = qrcode.make(verify_url)
-        qr_path = os.path.join(app.config['UPLOAD_FOLDER'], f'qr_{verification_code}.png')
-        qr.save(qr_path)
+        img_byte_arr = io.BytesIO()
+        qr.save(img_byte_arr, format='PNG')
+        img_byte_arr.seek(0)
         try:
-            c.drawImage(qr_path, W - border_margin - 115, border_margin + 60, width=70, height=70)
+            c.drawImage(ImageReader(img_byte_arr), W - border_margin - 115, border_margin + 60, width=70, height=70)
         except Exception:
             pass
         c.setFillColor(colors.HexColor('#888888'))
@@ -3423,8 +3454,15 @@ def serve_upload(filename):
     """Serve uploaded files only to authenticated users."""
     # Strip any path traversal attempts
     safe_name = os.path.basename(filename)
-    upload_folder = app.config.get('UPLOAD_FOLDER', 'static/uploads')
-    return send_from_directory(upload_folder, safe_name)
+    if supabase:
+        try:
+            res = supabase.storage.from_(SUPABASE_BUCKET).download(safe_name)
+            return send_file(io.BytesIO(res), download_name=safe_name)
+        except Exception:
+            abort(404)
+    else:
+        upload_folder = app.config.get('UPLOAD_FOLDER', 'static/uploads')
+        return send_from_directory(upload_folder, safe_name)
 
 # ─── Account Deletion Executor ─────────────────────────────────────────────────
 
